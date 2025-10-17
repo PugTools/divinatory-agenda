@@ -4,6 +4,7 @@ import { Calendar } from '@/components/Calendar';
 import { TimeSlotPicker } from '@/components/TimeSlotPicker';
 import { BookingForm } from '@/components/BookingForm';
 import { AppointmentModal } from '@/components/AppointmentModal';
+import { PaymentModal } from '@/components/PaymentModal';
 import { LoginModal } from '@/components/admin/LoginModal';
 import { Dashboard } from '@/components/admin/Dashboard';
 import { AppointmentsTab } from '@/components/admin/AppointmentsTab';
@@ -17,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Appointment } from '@/types/divination';
 import { calculateCruz } from '@/utils/cruz-calculator';
 import { generatePDF } from '@/utils/pdf-generator';
-import { Sparkles, Lock, Save, FileDown } from 'lucide-react';
+import { Sparkles, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Index = () => {
@@ -40,6 +41,7 @@ const Index = () => {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [currentAppointment, setCurrentAppointment] = useState<Appointment | null>(null);
 
   // Admin state
@@ -96,11 +98,14 @@ const Index = () => {
 
       addAppointment(appointment);
       setCurrentAppointment(appointment);
-      setShowAppointmentModal(true);
+      
+      // Mostrar modal de pagamento para cliente
+      setShowPaymentModal(true);
+      
       setSelectedDate(null);
       setSelectedTime(null);
 
-      toast.success('Agendamento confirmado!');
+      toast.success('Agendamento criado! Complete o pagamento.');
     } catch (error) {
       toast.error('Erro ao criar agendamento.');
       console.error(error);
@@ -252,10 +257,9 @@ const Index = () => {
                 <Badge variant="secondary">
                   {agendamentos.length} agendamento{agendamentos.length !== 1 ? 's' : ''}
                 </Badge>
-                <Button variant="outline" size="sm">
-                  <Save className="mr-2 h-4 w-4" />
+                <span className="text-sm text-muted-foreground">
                   Salvo automaticamente
-                </Button>
+                </span>
               </div>
             </div>
 
@@ -306,7 +310,16 @@ const Index = () => {
         onLogin={handleLogin}
       />
 
-      {/* Appointment Details Modal */}
+      {/* Payment Modal - Para clientes */}
+      <PaymentModal
+        appointment={currentAppointment}
+        open={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        pixKey={config.pix}
+        pixLabel={config.pixLabel}
+      />
+
+      {/* Appointment Details Modal - Para admin */}
       <AppointmentModal
         appointment={currentAppointment}
         open={showAppointmentModal}
