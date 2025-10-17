@@ -165,9 +165,22 @@ const Index = () => {
                   Acesso Sacerdote
                 </Button>
               ) : (
-                <Badge variant="secondary" className="px-4 py-2">
-                  Usuário: admin
-                </Badge>
+                <div className="flex items-center gap-3">
+                  <Badge variant="secondary" className="px-4 py-2">
+                    Usuário: admin
+                  </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsLoggedIn(false);
+                      setActiveTab('dashboard');
+                      toast.success('Logout realizado com sucesso!');
+                    }}
+                  >
+                    Sair
+                  </Button>
+                </div>
               )}
             </div>
           </div>
