@@ -27,7 +27,8 @@ export const ConfigTab = ({ config, onUpdateConfig }: ConfigTabProps) => {
     const newHorarios = config.horarios.includes(slot)
       ? config.horarios.filter(h => h !== slot)
       : [...config.horarios, slot];
-    onUpdateConfig({ ...config, horarios: newHorarios });
+    const newConfig = { ...config, horarios: newHorarios };
+    onUpdateConfig(newConfig);
   };
 
   const addCustomSlots = () => {
@@ -36,7 +37,8 @@ export const ConfigTab = ({ config, onUpdateConfig }: ConfigTabProps) => {
     parts.forEach(p => {
       if (!newHorarios.includes(p)) newHorarios.push(p);
     });
-    onUpdateConfig({ ...config, horarios: newHorarios });
+    const newConfig = { ...config, horarios: newHorarios };
+    onUpdateConfig(newConfig);
     setCustomSlotsStr('');
   };
 
@@ -44,7 +46,8 @@ export const ConfigTab = ({ config, onUpdateConfig }: ConfigTabProps) => {
     const newWeekdays = config.weekdays.includes(day)
       ? config.weekdays.filter(d => d !== day)
       : [...config.weekdays, day];
-    onUpdateConfig({ ...config, weekdays: newWeekdays });
+    const newConfig = { ...config, weekdays: newWeekdays };
+    onUpdateConfig(newConfig);
   };
 
   const addExtraDate = () => {
@@ -52,8 +55,11 @@ export const ConfigTab = ({ config, onUpdateConfig }: ConfigTabProps) => {
       alert('Escolha uma data.');
       return;
     }
-    if (!config.extraDates.includes(newExtraDate)) {
-      onUpdateConfig({ ...config, extraDates: [...config.extraDates, newExtraDate] });
+    // Format date as YYYY-MM-DD
+    const formattedDate = newExtraDate;
+    if (!config.extraDates.includes(formattedDate)) {
+      const newConfig = { ...config, extraDates: [...config.extraDates, formattedDate] };
+      onUpdateConfig(newConfig);
     }
     setNewExtraDate('');
   };
