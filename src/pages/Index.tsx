@@ -217,40 +217,15 @@ const Index = () => {
                   <h3 className="font-semibold text-lg">1) Escolha a data</h3>
                   <Calendar
                     selectedDate={selectedDate}
-                    onSelectDate={setSelectedDate}
+                    onSelectDate={(date) => {
+                      setSelectedDate(date);
+                      setSelectedTime(null);
+                      setShowBookingSheet(true);
+                    }}
                     weekdays={config.weekdays}
                     extraDates={config.extraDates}
                   />
                 </div>
-
-                {/* Step 2: Time Slots */}
-                {selectedDate && (
-                  <div className="space-y-3">
-                    <h3 className="font-semibold text-lg">
-                      2) Horários disponíveis em {new Date(selectedDate).toLocaleDateString('pt-BR')}
-                    </h3>
-                    <TimeSlotPicker
-                      availableSlots={config.horarios}
-                      occupiedSlots={getOccupiedSlots(selectedDate)}
-                      selectedTime={selectedTime}
-                      onSelectTime={setSelectedTime}
-                    />
-                  </div>
-                )}
-
-                {/* Step 3: Open Form Sheet */}
-                {selectedDate && selectedTime && (
-                  <div className="pt-4 border-t">
-                    <Button 
-                      onClick={() => setShowBookingSheet(true)} 
-                      className="w-full bg-gradient-primary"
-                      size="lg"
-                    >
-                      <Sparkles className="mr-2 h-5 w-5" />
-                      3) Preencher dados e confirmar
-                    </Button>
-                  </div>
-                )}
               </div>
             </Card>
           </div>
@@ -343,17 +318,36 @@ const Index = () => {
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2 text-xl">
               <Sparkles className="h-5 w-5 text-primary" />
-              Finalizar Agendamento
+              Agendar Consulta
             </SheetTitle>
           </SheetHeader>
-          <div className="mt-6">
-            <div className="mb-4 p-3 bg-gradient-mystical rounded-lg space-y-1">
-              <div className="text-sm text-muted-foreground">Data e Horário</div>
+          <div className="mt-6 space-y-6">
+            {/* Data selecionada */}
+            <div className="p-3 bg-gradient-mystical rounded-lg">
+              <div className="text-sm text-muted-foreground">Data Selecionada</div>
               <div className="font-semibold">
-                {selectedDate && new Date(selectedDate).toLocaleDateString('pt-BR')} às {selectedTime}
+                {selectedDate && new Date(selectedDate).toLocaleDateString('pt-BR')}
               </div>
             </div>
-            <BookingForm valores={valores} onSubmit={handleBookingSubmit} />
+
+            {/* Step 2: Horários */}
+            <div className="space-y-3">
+              <h3 className="font-semibold">2) Escolha o horário</h3>
+              <TimeSlotPicker
+                availableSlots={config.horarios}
+                occupiedSlots={selectedDate ? getOccupiedSlots(selectedDate) : []}
+                selectedTime={selectedTime}
+                onSelectTime={setSelectedTime}
+              />
+            </div>
+
+            {/* Step 3: Formulário */}
+            {selectedTime && (
+              <div className="space-y-3 pt-4 border-t">
+                <h3 className="font-semibold">3) Seus dados</h3>
+                <BookingForm valores={valores} onSubmit={handleBookingSubmit} />
+              </div>
+            )}
           </div>
         </SheetContent>
       </Sheet>
