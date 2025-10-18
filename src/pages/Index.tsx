@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Appointment } from '@/types/divination';
 import { calculateCruz } from '@/utils/cruz-calculator';
 import { generatePDF } from '@/utils/pdf-generator';
@@ -40,6 +41,7 @@ const Index = () => {
   // Booking state
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [showBookingSheet, setShowBookingSheet] = useState(false);
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [currentAppointment, setCurrentAppointment] = useState<Appointment | null>(null);
@@ -99,7 +101,8 @@ const Index = () => {
       addAppointment(appointment);
       setCurrentAppointment(appointment);
       
-      // Mostrar modal de pagamento para cliente
+      // Fechar sheet e mostrar modal de pagamento para cliente
+      setShowBookingSheet(false);
       setShowPaymentModal(true);
       
       setSelectedDate(null);
@@ -235,11 +238,17 @@ const Index = () => {
                   </div>
                 )}
 
-                {/* Step 3: Form */}
+                {/* Step 3: Open Form Sheet */}
                 {selectedDate && selectedTime && (
-                  <div className="space-y-3 pt-4 border-t">
-                    <h3 className="font-semibold text-lg">3) Seus dados e tipo de jogo</h3>
-                    <BookingForm valores={valores} onSubmit={handleBookingSubmit} />
+                  <div className="pt-4 border-t">
+                    <Button 
+                      onClick={() => setShowBookingSheet(true)} 
+                      className="w-full bg-gradient-primary"
+                      size="lg"
+                    >
+                      <Sparkles className="mr-2 h-5 w-5" />
+                      3) Preencher dados e confirmar
+                    </Button>
                   </div>
                 )}
               </div>
@@ -327,6 +336,27 @@ const Index = () => {
         onGeneratePDF={handleGeneratePDF}
         onFinalize={isLoggedIn ? handleFinalizeAppointment : undefined}
       />
+
+      {/* Booking Sheet - Para clientes */}
+      <Sheet open={showBookingSheet} onOpenChange={setShowBookingSheet}>
+        <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2 text-xl">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Finalizar Agendamento
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-6">
+            <div className="mb-4 p-3 bg-gradient-mystical rounded-lg space-y-1">
+              <div className="text-sm text-muted-foreground">Data e Horário</div>
+              <div className="font-semibold">
+                {selectedDate && new Date(selectedDate).toLocaleDateString('pt-BR')} às {selectedTime}
+              </div>
+            </div>
+            <BookingForm valores={valores} onSubmit={handleBookingSubmit} />
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
