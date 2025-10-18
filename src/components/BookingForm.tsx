@@ -23,6 +23,27 @@ export const BookingForm = ({ valores, onSubmit }: BookingFormProps) => {
     tipo: ''
   });
 
+  const formatWhatsApp = (value: string) => {
+    // Remove tudo que não é número
+    const numbers = value.replace(/\D/g, '');
+    
+    // Aplica a máscara (XX) XXXXX-XXXX
+    if (numbers.length <= 2) {
+      return numbers;
+    } else if (numbers.length <= 7) {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    } else if (numbers.length <= 11) {
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+    }
+    // Limita a 11 dígitos
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7, 11)}`;
+  };
+
+  const handleWhatsAppChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatWhatsApp(e.target.value);
+    setFormData({ ...formData, whatsapp: formatted });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.whatsapp || !formData.birthdate || !formData.tipo) {
@@ -51,8 +72,9 @@ export const BookingForm = ({ valores, onSubmit }: BookingFormProps) => {
           <Input
             id="whatsapp"
             value={formData.whatsapp}
-            onChange={(e) => setFormData({ ...formData, whatsapp: e.target.value })}
+            onChange={handleWhatsAppChange}
             placeholder="(XX) 9XXXX-XXXX"
+            maxLength={15}
             required
           />
         </div>
