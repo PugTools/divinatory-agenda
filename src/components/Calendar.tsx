@@ -27,6 +27,9 @@ export const Calendar = ({ selectedDate, onSelectDate, disabledDates = [], weekd
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
+  // Debug: log weekdays to console
+  console.log('Calendar weekdays config:', weekdays);
+
   const generateCalendarDays = (): CalendarDay[] => {
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const today = new Date();
@@ -48,6 +51,16 @@ export const Calendar = ({ selectedDate, onSelectDate, disabledDates = [], weekd
       const extraAllowed = extraDates.includes(iso);
       const isOccupied = disabledDates.includes(iso);
       const allowed = !isPast && (weekdayAllowed || extraAllowed) && !isOccupied;
+
+      // Debug log for first few days
+      if (i <= 3) {
+        console.log(`Day ${i} (${DAY_NAMES[date.getDay()]}):`, {
+          weekday: date.getDay(),
+          weekdayAllowed,
+          isPast,
+          allowed
+        });
+      }
 
       days.push({
         date: iso,
@@ -94,7 +107,7 @@ export const Calendar = ({ selectedDate, onSelectDate, disabledDates = [], weekd
           </Button>
         </div>
         <div className="text-sm text-muted-foreground">
-          Dias passados estão bloqueados
+          Dias liberados: {weekdays.map(d => DAY_NAMES[d]).join(', ')}
         </div>
       </div>
 
