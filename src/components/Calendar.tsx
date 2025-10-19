@@ -34,8 +34,15 @@ export const Calendar = ({ selectedDate, onSelectDate, disabledDates = [], weekd
     const days: CalendarDay[] = [];
 
     for (let i = 1; i <= daysInMonth; i++) {
-      const date = new Date(currentYear, currentMonth, i);
-      const iso = date.toISOString().split('T')[0];
+      // Create date at noon to avoid timezone issues
+      const date = new Date(currentYear, currentMonth, i, 12, 0, 0);
+      
+      // Format as YYYY-MM-DD without timezone conversion
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const iso = `${year}-${month}-${day}`;
+      
       const isPast = date < today;
       const weekdayAllowed = weekdays.includes(date.getDay());
       const extraAllowed = extraDates.includes(iso);
