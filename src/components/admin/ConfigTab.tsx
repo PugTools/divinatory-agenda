@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plus, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ConfigTabProps {
   config: Config;
@@ -32,14 +33,38 @@ export const ConfigTab = ({ config, onUpdateConfig }: ConfigTabProps) => {
   };
 
   const addCustomSlots = () => {
+    if (!customSlotsStr.trim()) {
+      toast.error('Digite pelo menos um horário');
+      return;
+    }
+
     const parts = customSlotsStr.split(',').map(s => s.trim()).filter(Boolean);
+    const validTimeRegex = /^([01]?\d|2[0-3]):[0-5]\d$/;
+    
+    const invalidTimes = parts.filter(p => !validTimeRegex.test(p));
+    if (invalidTimes.length > 0) {
+      toast.error(`Horários inválidos: ${invalidTimes.join(', ')}. Use o formato HH:MM`);
+      return;
+    }
+
     const newHorarios = [...config.horarios];
+    let addedCount = 0;
     parts.forEach(p => {
-      if (!newHorarios.includes(p)) newHorarios.push(p);
+      if (!newHorarios.includes(p)) {
+        newHorarios.push(p);
+        addedCount++;
+      }
     });
-    const newConfig = { ...config, horarios: newHorarios };
+
+    if (addedCount === 0) {
+      toast.warning('Todos os horários já existem');
+      return;
+    }
+
+    const newConfig = { ...config, horarios: newHorarios.sort() };
     onUpdateConfig(newConfig);
     setCustomSlotsStr('');
+    toast.success(`${addedCount} horário${addedCount > 1 ? 's adicionados' : ' adicionado'}`);
   };
 
   const toggleWeekday = (day: number) => {
@@ -52,20 +77,25 @@ export const ConfigTab = ({ config, onUpdateConfig }: ConfigTabProps) => {
 
   const addExtraDate = () => {
     if (!newExtraDate) {
-      alert('Escolha uma data.');
+      toast.error('Escolha uma data');
       return;
     }
-    // Format date as YYYY-MM-DD
+    
     const formattedDate = newExtraDate;
-    if (!config.extraDates.includes(formattedDate)) {
-      const newConfig = { ...config, extraDates: [...config.extraDates, formattedDate] };
-      onUpdateConfig(newConfig);
+    if (config.extraDates.includes(formattedDate)) {
+      toast.warning('Esta data já foi adicionada');
+      return;
     }
+
+    const newConfig = { ...config, extraDates: [...config.extraDates, formattedDate].sort() };
+    onUpdateConfig(newConfig);
     setNewExtraDate('');
+    toast.success('Data extra adicionada');
   };
 
   const removeExtraDate = (date: string) => {
     onUpdateConfig({ ...config, extraDates: config.extraDates.filter(d => d !== date) });
+    toast.success('Data removida');
   };
 
   return (
@@ -79,18 +109,46 @@ export const ConfigTab = ({ config, onUpdateConfig }: ConfigTabProps) => {
           <p className="text-sm text-muted-foreground mb-3">
             Clique para ativar/desativar horários
           </p>
-          <div className="flex flex-wrap gap-2">
-            {DEFAULT_SLOTS.map(slot => (
-              <Button
-                key={slot}
-                size="sm"
-                variant={config.horarios.includes(slot) ? 'default' : 'outline'}
-                onClick={() => toggleHorario(slot)}
-              >
-                {slot}
-              </Button>
-            ))}
+          
+          {/* Horários padrão */}
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Horários padrão</p>
+            <div className="flex flex-wrap gap-2">
+              {DEFAULT_SLOTS.map(slot => (
+                <Button
+                  key={slot}
+                  size="sm"
+                  variant={config.horarios.includes(slot) ? 'default' : 'outline'}
+                  onClick={() => toggleHorario(slot)}
+                >
+                  {slot}
+                </Button>
+              ))}
+            </div>
           </div>
+
+          {/* Horários personalizados */}
+          {config.horarios.filter(h => !DEFAULT_SLOTS.includes(h)).length > 0 && (
+            <div className="space-y-2 pt-2">
+              <p className="text-xs font-medium text-muted-foreground">Horários personalizados</p>
+              <div className="flex flex-wrap gap-2">
+                {config.horarios
+                  .filter(h => !DEFAULT_SLOTS.includes(h))
+                  .sort()
+                  .map(slot => (
+                    <Badge
+                      key={slot}
+                      variant="secondary"
+                      className="gap-2 px-3 py-1.5 cursor-pointer hover:bg-destructive/10"
+                      onClick={() => toggleHorario(slot)}
+                    >
+                      {slot}
+                      <X className="h-3 w-3" />
+                    </Badge>
+                  ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div>
