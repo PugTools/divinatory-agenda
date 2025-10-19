@@ -46,21 +46,25 @@ export const Calendar = ({ selectedDate, onSelectDate, disabledDates = [], weekd
       const day = String(date.getDate()).padStart(2, '0');
       const iso = `${year}-${month}-${day}`;
       
-      const isPast = date < today;
+      // Properly check if date is in the past
+      const dateOnly = new Date(currentYear, currentMonth, i);
+      dateOnly.setHours(0, 0, 0, 0);
+      const isPast = dateOnly < today;
+      
       const weekdayAllowed = weekdays.includes(date.getDay());
       const extraAllowed = extraDates.includes(iso);
       const isOccupied = disabledDates.includes(iso);
       const allowed = !isPast && (weekdayAllowed || extraAllowed) && !isOccupied;
 
-      // Debug log for first few days
-      if (i <= 3) {
-        console.log(`Day ${i} (${DAY_NAMES[date.getDay()]}):`, {
-          weekday: date.getDay(),
-          weekdayAllowed,
-          isPast,
-          allowed
-        });
-      }
+      // Debug log for all days this month
+      console.log(`${i}/${currentMonth + 1} (${DAY_NAMES[date.getDay()]}):`, {
+        weekday: date.getDay(),
+        weekdayAllowed,
+        extraAllowed,
+        isPast,
+        isOccupied,
+        allowed
+      });
 
       days.push({
         date: iso,
