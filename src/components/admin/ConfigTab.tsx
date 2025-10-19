@@ -174,6 +174,9 @@ export const ConfigTab = ({ config, onUpdateConfig }: ConfigTabProps) => {
       {/* Dias da semana */}
       <div className="space-y-3">
         <Label className="text-base">Dias da semana em que atende</Label>
+        <p className="text-xs text-muted-foreground mb-2">
+          Estes dias ficarão disponíveis no calendário para os clientes agendarem
+        </p>
         <div className="flex flex-wrap gap-3">
           {DAY_NAMES.map((day, idx) => (
             <div key={idx} className="flex items-center space-x-2">
@@ -190,6 +193,15 @@ export const ConfigTab = ({ config, onUpdateConfig }: ConfigTabProps) => {
               </label>
             </div>
           ))}
+        </div>
+        <div className="p-3 bg-muted rounded-lg">
+          <p className="text-sm">
+            <span className="font-semibold">Dias selecionados: </span>
+            {config.weekdays.length > 0 
+              ? config.weekdays.sort((a, b) => a - b).map(idx => DAY_NAMES[idx]).join(', ')
+              : 'Nenhum dia selecionado'
+            }
+          </p>
         </div>
       </div>
 
@@ -210,14 +222,18 @@ export const ConfigTab = ({ config, onUpdateConfig }: ConfigTabProps) => {
 
         {config.extraDates.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            {config.extraDates.map(date => (
-              <Badge key={date} variant="secondary" className="gap-2">
-                {new Date(date).toLocaleDateString('pt-BR')}
-                <button onClick={() => removeExtraDate(date)}>
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            ))}
+            {config.extraDates.map(date => {
+              const [year, month, day] = date.split('-');
+              const formattedDate = `${day}/${month}/${year}`;
+              return (
+                <Badge key={date} variant="secondary" className="gap-2">
+                  {formattedDate}
+                  <button onClick={() => removeExtraDate(date)}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              );
+            })}
           </div>
         )}
       </div>

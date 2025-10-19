@@ -43,7 +43,12 @@ export const AppointmentsTab = ({ agendamentos, onOpenAppointment, onRemoveAppoi
                 <TableCell className="font-medium">{appointment.name}</TableCell>
                 <TableCell>{appointment.whatsapp}</TableCell>
                 <TableCell className="text-sm">{appointment.tipo}</TableCell>
-                <TableCell>{new Date(appointment.dataEscolhida).toLocaleDateString('pt-BR')}</TableCell>
+                <TableCell>
+                  {(() => {
+                    const [year, month, day] = appointment.dataEscolhida.split('-');
+                    return `${day}/${month}/${year}`;
+                  })()}
+                </TableCell>
                 <TableCell>{appointment.hora}</TableCell>
                 <TableCell>
                   <Badge variant={appointment.status === 'Confirmado' ? 'default' : 'secondary'}>

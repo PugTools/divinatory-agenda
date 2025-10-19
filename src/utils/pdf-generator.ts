@@ -55,7 +55,10 @@ export const generatePDF = (appointment: Appointment, pixInfo: { pix: string; pi
   drawText(`WhatsApp: ${appointment.whatsapp}`, 11);
   drawText(`Nasc.: ${appointment.birthdate}`, 11);
   drawText(`Jogo: ${appointment.tipo} — R$ ${appointment.valor}`, 11);
-  drawText(`Data/Hora: ${new Date(appointment.dataEscolhida).toLocaleDateString('pt-BR')} — ${appointment.hora}`, 11);
+  drawText(`Data/Hora: ${(() => {
+    const [year, month, day] = appointment.dataEscolhida.split('-');
+    return `${day}/${month}/${year}`;
+  })()} — ${appointment.hora}`, 11);
 
   y += 6;
   drawText('--- Cruz dos 5 Odùs ---', 12, { isBold: true });

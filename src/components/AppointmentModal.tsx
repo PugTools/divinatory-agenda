@@ -45,7 +45,10 @@ export const AppointmentModal = ({ appointment, open, onClose, onGeneratePDF, on
             <Card className="p-4 space-y-2">
               <div className="text-sm text-muted-foreground">Agendamento</div>
               <div className="font-semibold">
-                {new Date(appointment.dataEscolhida).toLocaleDateString('pt-BR')} — {appointment.hora}
+                {(() => {
+                  const [year, month, day] = appointment.dataEscolhida.split('-');
+                  return `${day}/${month}/${year}`;
+                })()} — {appointment.hora}
               </div>
               <div className="text-sm text-muted-foreground">
                 Jogo: {appointment.tipo} — R$ {appointment.valor}
