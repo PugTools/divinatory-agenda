@@ -32,9 +32,19 @@ export const Calendar = ({ selectedDate, onSelectDate, disabledDates = [], weekd
 
   const generateCalendarDays = (): CalendarDay[] => {
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const days: CalendarDay[] = [];
+
+    // Add empty cells for days before the first day of the month
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      days.push({
+        date: '',
+        dayNumber: 0,
+        disabled: true
+      });
+    }
 
     for (let i = 1; i <= daysInMonth; i++) {
       // Create date at noon to avoid timezone issues
@@ -122,19 +132,20 @@ export const Calendar = ({ selectedDate, onSelectDate, disabledDates = [], weekd
       </div>
 
       <div className="grid grid-cols-7 gap-2">
-        {calendarDays.map((day) => (
+        {calendarDays.map((day, index) => (
           <button
-            key={day.date}
-            onClick={() => !day.disabled && onSelectDate(day.date)}
+            key={day.date || `empty-${index}`}
+            onClick={() => !day.disabled && day.date && onSelectDate(day.date)}
             disabled={day.disabled}
             className={cn(
               'min-h-[44px] rounded-lg border flex items-center justify-center font-medium text-sm transition-all',
-              day.disabled && 'bg-muted text-muted-foreground cursor-not-allowed opacity-50',
+              !day.dayNumber && 'invisible',
+              day.disabled && day.dayNumber && 'bg-muted text-muted-foreground cursor-not-allowed opacity-50',
               !day.disabled && selectedDate === day.date && 'bg-primary text-primary-foreground shadow-md',
-              !day.disabled && selectedDate !== day.date && 'bg-background hover:bg-accent hover:text-accent-foreground'
+              !day.disabled && selectedDate !== day.date && day.dayNumber && 'bg-background hover:bg-accent hover:text-accent-foreground'
             )}
           >
-            {day.dayNumber}
+            {day.dayNumber || ''}
           </button>
         ))}
       </div>
