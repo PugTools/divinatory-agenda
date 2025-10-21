@@ -14,7 +14,334 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      appointments: {
+        Row: {
+          client_birthdate: string
+          client_name: string
+          client_whatsapp: string
+          confirmation_sent: boolean | null
+          created_at: string | null
+          cruz: Json | null
+          game_type_id: string | null
+          game_type_name: string | null
+          id: string
+          notes: string | null
+          payment_id: string | null
+          payment_status: string | null
+          priest_id: string | null
+          reminder_sent: boolean | null
+          scheduled_date: string
+          scheduled_time: string
+          status: string | null
+          updated_at: string | null
+          valor: number
+        }
+        Insert: {
+          client_birthdate: string
+          client_name: string
+          client_whatsapp: string
+          confirmation_sent?: boolean | null
+          created_at?: string | null
+          cruz?: Json | null
+          game_type_id?: string | null
+          game_type_name?: string | null
+          id?: string
+          notes?: string | null
+          payment_id?: string | null
+          payment_status?: string | null
+          priest_id?: string | null
+          reminder_sent?: boolean | null
+          scheduled_date: string
+          scheduled_time: string
+          status?: string | null
+          updated_at?: string | null
+          valor: number
+        }
+        Update: {
+          client_birthdate?: string
+          client_name?: string
+          client_whatsapp?: string
+          confirmation_sent?: boolean | null
+          created_at?: string | null
+          cruz?: Json | null
+          game_type_id?: string | null
+          game_type_name?: string | null
+          id?: string
+          notes?: string | null
+          payment_id?: string | null
+          payment_status?: string | null
+          priest_id?: string | null
+          reminder_sent?: boolean | null
+          scheduled_date?: string
+          scheduled_time?: string
+          status?: string | null
+          updated_at?: string | null
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_game_type_id_fkey"
+            columns: ["game_type_id"]
+            isOneToOne: false
+            referencedRelation: "game_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_priest_id_fkey"
+            columns: ["priest_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_types: {
+        Row: {
+          active: boolean | null
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          priest_id: string | null
+          sort_order: number | null
+          value: number
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          priest_id?: string | null
+          sort_order?: number | null
+          value: number
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          priest_id?: string | null
+          sort_order?: number | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_types_priest_id_fkey"
+            columns: ["priest_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications_log: {
+        Row: {
+          appointment_id: string | null
+          error_message: string | null
+          id: string
+          priest_id: string | null
+          sent_at: string | null
+          status: string
+          type: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          error_message?: string | null
+          id?: string
+          priest_id?: string | null
+          sent_at?: string | null
+          status: string
+          type: string
+        }
+        Update: {
+          appointment_id?: string | null
+          error_message?: string | null
+          id?: string
+          priest_id?: string | null
+          sent_at?: string | null
+          status?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_log_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_log_priest_id_fkey"
+            columns: ["priest_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_transactions: {
+        Row: {
+          amount: number
+          appointment_id: string | null
+          created_at: string | null
+          external_id: string | null
+          id: string
+          paid_at: string | null
+          payment_method: string | null
+          pix_copy_paste: string | null
+          pix_qr_code: string | null
+          priest_id: string | null
+          status: string | null
+        }
+        Insert: {
+          amount: number
+          appointment_id?: string | null
+          created_at?: string | null
+          external_id?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          pix_copy_paste?: string | null
+          pix_qr_code?: string | null
+          priest_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          amount?: number
+          appointment_id?: string | null
+          created_at?: string | null
+          external_id?: string | null
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          pix_copy_paste?: string | null
+          pix_qr_code?: string | null
+          priest_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_transactions_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_transactions_priest_id_fkey"
+            columns: ["priest_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      priest_config: {
+        Row: {
+          created_at: string | null
+          extra_dates: string[] | null
+          horarios: string[] | null
+          id: string
+          logo_url: string | null
+          pix_key: string | null
+          pix_label: string | null
+          priest_id: string | null
+          theme_color: string | null
+          updated_at: string | null
+          weekdays: number[] | null
+          welcome_message: string | null
+          whatsapp_api_token: string | null
+          whatsapp_enabled: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          extra_dates?: string[] | null
+          horarios?: string[] | null
+          id?: string
+          logo_url?: string | null
+          pix_key?: string | null
+          pix_label?: string | null
+          priest_id?: string | null
+          theme_color?: string | null
+          updated_at?: string | null
+          weekdays?: number[] | null
+          welcome_message?: string | null
+          whatsapp_api_token?: string | null
+          whatsapp_enabled?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          extra_dates?: string[] | null
+          horarios?: string[] | null
+          id?: string
+          logo_url?: string | null
+          pix_key?: string | null
+          pix_label?: string | null
+          priest_id?: string | null
+          theme_color?: string | null
+          updated_at?: string | null
+          weekdays?: number[] | null
+          welcome_message?: string | null
+          whatsapp_api_token?: string | null
+          whatsapp_enabled?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "priest_config_priest_id_fkey"
+            columns: ["priest_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          custom_domain: string | null
+          display_name: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          is_active: boolean | null
+          phone: string | null
+          subdomain: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          custom_domain?: string | null
+          display_name?: string | null
+          email?: string | null
+          full_name?: string | null
+          id: string
+          is_active?: boolean | null
+          phone?: string | null
+          subdomain?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          custom_domain?: string | null
+          display_name?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          phone?: string | null
+          subdomain?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
