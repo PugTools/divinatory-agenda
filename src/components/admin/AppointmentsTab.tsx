@@ -8,7 +8,7 @@ import { Eye, Trash2 } from 'lucide-react';
 interface AppointmentsTabProps {
   agendamentos: Appointment[];
   onOpenAppointment: (appointment: Appointment) => void;
-  onRemoveAppointment: (id: number) => void;
+  onRemoveAppointment: (id: string | number) => void;
 }
 
 export const AppointmentsTab = ({ agendamentos, onOpenAppointment, onRemoveAppointment }: AppointmentsTabProps) => {

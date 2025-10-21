@@ -17,7 +17,7 @@ export interface Cruz {
 }
 
 export interface Appointment {
-  id: number;
+  id: string | number; // Suporta ambos para transição
   name: string;
   whatsapp: string;
   birthdate: string;

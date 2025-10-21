@@ -1,81 +1,59 @@
 import { useState } from 'react';
-import { useAppData } from '@/hooks/useAppData';
+import { Link } from 'react-router-dom';
+import { usePriestContext } from '@/hooks/usePriestContext';
 import { Calendar } from '@/components/Calendar';
 import { TimeSlotPicker } from '@/components/TimeSlotPicker';
 import { BookingForm } from '@/components/BookingForm';
-import { AppointmentModal } from '@/components/AppointmentModal';
 import { PaymentModal } from '@/components/PaymentModal';
-import { LoginModal } from '@/components/admin/LoginModal';
-import { Dashboard } from '@/components/admin/Dashboard';
-import { AppointmentsTab } from '@/components/admin/AppointmentsTab';
-import { ValoresTab } from '@/components/admin/ValoresTab';
-import { ConfigTab } from '@/components/admin/ConfigTab';
-import { FinanceiroTab } from '@/components/admin/FinanceiroTab';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Appointment } from '@/types/divination';
+import { Sparkles, Lock, Loader2 } from 'lucide-react';
 import { calculateCruz } from '@/utils/cruz-calculator';
-import { generatePDF } from '@/utils/pdf-generator';
-import { Sparkles, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Index = () => {
   const {
-    agendamentos,
-    valores,
+    priestId,
+    profile,
     config,
-    addAppointment,
-    updateAppointment,
-    removeAppointment,
-    updateValores,
-    updateConfig
-  } = useAppData();
+    gameTypes,
+    loading,
+    createAppointment,
+    getOccupiedSlots
+  } = usePriestContext();
 
-  // Auth state
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-
-  // Booking state
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [showBookingSheet, setShowBookingSheet] = useState(false);
-  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [currentAppointment, setCurrentAppointment] = useState<Appointment | null>(null);
+  const [currentAppointment, setCurrentAppointment] = useState<any>(null);
+  const [occupiedSlots, setOccupiedSlots] = useState<string[]>([]);
 
-  // Admin state
-  const [activeTab, setActiveTab] = useState('dashboard');
-
-  const handleLogin = (user: string, pass: string): boolean => {
-    if (user === 'admin' && pass === '12345') {
-      setIsLoggedIn(true);
-      setShowLoginModal(false);
-      toast.success('Login realizado com sucesso!');
-      return true;
-    }
-    return false;
+  const handleDateSelect = async (date: string) => {
+    setSelectedDate(date);
+    setSelectedTime(null);
+    setShowBookingSheet(true);
+    
+    // Load occupied slots for this date
+    const slots = await getOccupiedSlots(date);
+    setOccupiedSlots(slots);
   };
 
-  const handleBookingSubmit = (formData: {
+  const handleBookingSubmit = async (formData: {
     name: string;
     whatsapp: string;
     birthdate: string;
     tipo: string;
   }) => {
-    if (!selectedDate || !selectedTime) {
+    if (!selectedDate || !selectedTime || !priestId) {
       toast.error('Selecione data e horário.');
       return;
     }
 
     // Check if slot is still available
-    const isOccupied = agendamentos.some(
-      a => a.dataEscolhida === selectedDate && a.hora === selectedTime
-    );
-
-    if (isOccupied) {
+    const currentOccupiedSlots = await getOccupiedSlots(selectedDate);
+    if (currentOccupiedSlots.includes(selectedTime)) {
       toast.error('Este horário foi ocupado. Escolha outro.');
       setSelectedTime(null);
       return;
@@ -83,28 +61,23 @@ const Index = () => {
 
     try {
       const cruz = calculateCruz(formData.birthdate);
+      const gameType = gameTypes.find(gt => gt.name === formData.tipo);
 
-      const appointment: Appointment = {
-        id: Date.now(),
-        name: formData.name,
-        whatsapp: formData.whatsapp,
-        birthdate: formData.birthdate,
-        tipo: formData.tipo,
-        valor: valores[formData.tipo] || 0,
-        dataEscolhida: selectedDate,
-        hora: selectedTime,
-        cruz,
-        status: 'Pendente',
-        createdAt: new Date().toISOString()
-      };
+      const appointment = await createAppointment({
+        client_name: formData.name,
+        client_whatsapp: formData.whatsapp,
+        client_birthdate: formData.birthdate,
+        game_type_id: gameType?.id || '',
+        game_type_name: formData.tipo,
+        scheduled_date: selectedDate,
+        scheduled_time: selectedTime,
+        valor: gameType?.value || 0,
+        cruz
+      });
 
-      addAppointment(appointment);
       setCurrentAppointment(appointment);
-      
-      // Fechar sheet e mostrar modal de pagamento para cliente
       setShowBookingSheet(false);
       setShowPaymentModal(true);
-      
       setSelectedDate(null);
       setSelectedTime(null);
 
@@ -115,32 +88,47 @@ const Index = () => {
     }
   };
 
-  const getOccupiedSlots = (date: string): string[] => {
-    return agendamentos
-      .filter(a => a.dataEscolhida === date)
-      .map(a => a.hora);
-  };
+  // Convert gameTypes to valores format for BookingForm
+  const valores: Record<string, number> = gameTypes.reduce((acc, gt) => {
+    acc[gt.name] = gt.value;
+    return acc;
+  }, {} as Record<string, number>);
 
-  const handleGeneratePDF = () => {
-    if (!currentAppointment) return;
-    try {
-      generatePDF(currentAppointment, {
-        pix: config.pix,
-        pixLabel: config.pixLabel
-      });
-      toast.success('PDF gerado com sucesso!');
-    } catch (error) {
-      toast.error('Erro ao gerar PDF.');
-      console.error(error);
-    }
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-mystical">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const handleFinalizeAppointment = () => {
-    if (!currentAppointment) return;
-    updateAppointment(currentAppointment.id, { status: 'Confirmado' });
-    setShowAppointmentModal(false);
-    toast.success('Agendamento finalizado!');
-  };
+  if (!priestId || !profile || !config) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-mystical p-4">
+        <Card className="p-8 max-w-md text-center">
+          <Sparkles className="h-16 w-16 text-primary mx-auto mb-4" />
+          <h2 className="text-2xl font-bold mb-2">Sacerdote não encontrado</h2>
+          <p className="text-muted-foreground mb-6">
+            Não foi possível identificar o sacerdote para este site.
+          </p>
+          <div className="space-y-2">
+            <Link to="/cadastro">
+              <Button className="w-full">Cadastrar como Sacerdote</Button>
+            </Link>
+            <Link to="/login">
+              <Button variant="outline" className="w-full">
+                <Lock className="mr-2 h-4 w-4" />
+                Acesso Sacerdote
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -153,52 +141,31 @@ const Index = () => {
                 <Sparkles className="h-8 w-8 text-primary" />
                 <div>
                   <h1 className="text-2xl md:text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                    Sistema de Agendamento Espiritual Divinatório
+                    {profile.display_name || profile.full_name || 'Consultas Espirituais'}
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    Agendamentos, Cruz dos Odùs e gestão completa
+                    {config.welcome_message}
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              {!isLoggedIn ? (
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.location.href = '/cadastro'}
-                  >
-                    Cadastro
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.location.href = '/login'}
-                  >
-                    <Lock className="mr-2 h-4 w-4" />
-                    Acesso Sacerdote
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3">
-                  <Badge variant="secondary" className="px-4 py-2">
-                    Usuário: admin
-                  </Badge>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setIsLoggedIn(false);
-                      setActiveTab('dashboard');
-                      toast.success('Logout realizado com sucesso!');
-                    }}
-                  >
-                    Sair
-                  </Button>
-                </div>
-              )}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.location.href = '/cadastro'}
+              >
+                Cadastro
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.location.href = '/login'}
+              >
+                <Lock className="mr-2 h-4 w-4" />
+                Acesso Sacerdote
+              </Button>
             </div>
           </div>
         </div>
@@ -206,122 +173,44 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        {!isLoggedIn ? (
-          // Public Booking Area
-          <div className="max-w-3xl mx-auto space-y-6">
-            <Card className="p-6">
-              <div className="space-y-6">
-                <div>
-                  <h2 className="text-2xl font-semibold mb-2 flex items-center gap-2">
-                    <Sparkles className="h-6 w-6 text-primary" />
-                    Agende seu Jogo Divinatório
-                  </h2>
-                  <p className="text-muted-foreground">
-                    Escolha a data, horário e preencha seus dados para receber sua Cruz dos Odùs
-                  </p>
-                </div>
-
-                {/* Step 1: Calendar */}
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-lg">1) Escolha a data</h3>
-                  <Calendar
-                    selectedDate={selectedDate}
-                    onSelectDate={(date) => {
-                      setSelectedDate(date);
-                      setSelectedTime(null);
-                      setShowBookingSheet(true);
-                    }}
-                    weekdays={config.weekdays}
-                    extraDates={config.extraDates}
-                  />
-                </div>
-              </div>
-            </Card>
-          </div>
-        ) : (
-          // Admin Area
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
+        <div className="max-w-3xl mx-auto space-y-6">
+          <Card className="p-6">
+            <div className="space-y-6">
               <div>
-                <h2 className="text-2xl font-bold">Painel Administrativo</h2>
-                <p className="text-muted-foreground">Gerencie agendamentos, valores e configurações</p>
+                <h2 className="text-2xl font-semibold mb-2 flex items-center gap-2">
+                  <Sparkles className="h-6 w-6 text-primary" />
+                  Agende seu Jogo Divinatório
+                </h2>
+                <p className="text-muted-foreground">
+                  Escolha a data, horário e preencha seus dados para receber sua Cruz dos Odùs
+                </p>
               </div>
-              <div className="flex items-center gap-3">
-                <Badge variant="secondary">
-                  {agendamentos.length} agendamento{agendamentos.length !== 1 ? 's' : ''}
-                </Badge>
-                <span className="text-sm text-muted-foreground">
-                  Salvo automaticamente
-                </span>
+
+              {/* Step 1: Calendar */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-lg">1) Escolha a data</h3>
+                <Calendar
+                  selectedDate={selectedDate}
+                  onSelectDate={handleDateSelect}
+                  weekdays={config.weekdays}
+                  extraDates={config.extra_dates}
+                />
               </div>
             </div>
-
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="dashboard">📊 Dashboard</TabsTrigger>
-                <TabsTrigger value="agendamentos">📅 Agendamentos</TabsTrigger>
-                <TabsTrigger value="valores">💰 Valores</TabsTrigger>
-                <TabsTrigger value="config">⚙️ Config</TabsTrigger>
-                <TabsTrigger value="financeiro">💳 Financeiro</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="dashboard" className="mt-6">
-                <Dashboard agendamentos={agendamentos} valores={valores} />
-              </TabsContent>
-
-              <TabsContent value="agendamentos" className="mt-6">
-                <AppointmentsTab
-                  agendamentos={agendamentos}
-                  onOpenAppointment={(apt) => {
-                    setCurrentAppointment(apt);
-                    setShowAppointmentModal(true);
-                  }}
-                  onRemoveAppointment={removeAppointment}
-                />
-              </TabsContent>
-
-              <TabsContent value="valores" className="mt-6">
-                <ValoresTab valores={valores} onUpdateValores={updateValores} />
-              </TabsContent>
-
-              <TabsContent value="config" className="mt-6">
-                <ConfigTab config={config} onUpdateConfig={updateConfig} />
-              </TabsContent>
-
-              <TabsContent value="financeiro" className="mt-6">
-                <FinanceiroTab config={config} onUpdateConfig={updateConfig} />
-              </TabsContent>
-            </Tabs>
-          </div>
-        )}
+          </Card>
+        </div>
       </main>
 
-      {/* Login Modal */}
-      <LoginModal
-        open={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        onLogin={handleLogin}
-      />
-
-      {/* Payment Modal - Para clientes */}
+      {/* Payment Modal */}
       <PaymentModal
         appointment={currentAppointment}
         open={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
-        pixKey={config.pix}
-        pixLabel={config.pixLabel}
+        pixKey={config.pix_key}
+        pixLabel={config.pix_label}
       />
 
-      {/* Appointment Details Modal - Para admin */}
-      <AppointmentModal
-        appointment={currentAppointment}
-        open={showAppointmentModal}
-        onClose={() => setShowAppointmentModal(false)}
-        onGeneratePDF={handleGeneratePDF}
-        onFinalize={isLoggedIn ? handleFinalizeAppointment : undefined}
-      />
-
-      {/* Booking Sheet - Para clientes */}
+      {/* Booking Sheet */}
       <Sheet open={showBookingSheet} onOpenChange={setShowBookingSheet}>
         <SheetContent side="right" className="w-full sm:max-w-lg overflow-y-auto">
           <SheetHeader>
@@ -335,7 +224,7 @@ const Index = () => {
             <div className="p-3 bg-gradient-mystical rounded-lg">
               <div className="text-sm text-muted-foreground">Data Selecionada</div>
               <div className="font-semibold">
-                {selectedDate && new Date(selectedDate).toLocaleDateString('pt-BR')}
+                {selectedDate && new Date(selectedDate + 'T00:00:00').toLocaleDateString('pt-BR')}
               </div>
             </div>
 
@@ -344,7 +233,7 @@ const Index = () => {
               <h3 className="font-semibold">2) Escolha o horário</h3>
               <TimeSlotPicker
                 availableSlots={config.horarios}
-                occupiedSlots={selectedDate ? getOccupiedSlots(selectedDate) : []}
+                occupiedSlots={occupiedSlots}
                 selectedTime={selectedTime}
                 onSelectTime={setSelectedTime}
               />
