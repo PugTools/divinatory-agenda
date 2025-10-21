@@ -164,14 +164,23 @@ const Index = () => {
 
             <div className="flex items-center gap-4">
               {!isLoggedIn ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowLoginModal(true)}
-                >
-                  <Lock className="mr-2 h-4 w-4" />
-                  Acesso Sacerdote
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.location.href = '/cadastro'}
+                  >
+                    Cadastro
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.location.href = '/login'}
+                  >
+                    <Lock className="mr-2 h-4 w-4" />
+                    Acesso Sacerdote
+                  </Button>
+                </div>
               ) : (
                 <div className="flex items-center gap-3">
                   <Badge variant="secondary" className="px-4 py-2">
