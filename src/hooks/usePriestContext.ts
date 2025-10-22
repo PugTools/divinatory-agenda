@@ -8,10 +8,8 @@ interface PriestProfile {
   custom_domain: string | null;
   bio: string | null;
   avatar_url: string | null;
-  email: string | null;
-  full_name: string | null;
-  phone: string | null;
   is_active: boolean | null;
+  // Sensitive fields removed for public access
 }
 
 interface PriestConfig {
@@ -53,9 +51,10 @@ export const usePriestContext = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const subdomainParam = urlParams.get('priest');
       
+      // Only fetch non-sensitive display information for public access
       let query = supabase
         .from('profiles')
-        .select('*')
+        .select('id, display_name, bio, avatar_url, subdomain, custom_domain, is_active')
         .eq('is_active', true);
 
       if (subdomainParam) {

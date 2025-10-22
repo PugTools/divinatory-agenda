@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
+import { mapErrorToUserMessage } from '@/utils/error-handler';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -53,9 +54,10 @@ export const useAuth = () => {
 
       return { data, error: null };
     } catch (error: any) {
+      console.error('Signup error:', error); // Log for debugging
       toast({
         title: 'Erro ao criar conta',
-        description: error.message,
+        description: mapErrorToUserMessage(error),
         variant: 'destructive',
       });
       return { data: null, error };
@@ -79,9 +81,10 @@ export const useAuth = () => {
       navigate('/admin');
       return { data, error: null };
     } catch (error: any) {
+      console.error('Login error:', error); // Log for debugging
       toast({
         title: 'Erro ao fazer login',
-        description: error.message,
+        description: mapErrorToUserMessage(error),
         variant: 'destructive',
       });
       return { data: null, error };
@@ -101,9 +104,10 @@ export const useAuth = () => {
       navigate('/');
       return { error: null };
     } catch (error: any) {
+      console.error('Logout error:', error); // Log for debugging
       toast({
         title: 'Erro ao fazer logout',
-        description: error.message,
+        description: mapErrorToUserMessage(error),
         variant: 'destructive',
       });
       return { error };

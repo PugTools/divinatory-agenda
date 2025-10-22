@@ -141,7 +141,7 @@ const Index = () => {
                 <Sparkles className="h-8 w-8 text-primary" />
                 <div>
                   <h1 className="text-2xl md:text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-                    {profile.display_name || profile.full_name || 'Consultas Espirituais'}
+                    {profile.display_name || 'Consultas Espirituais'}
                   </h1>
                   <p className="text-sm text-muted-foreground">
                     {config.welcome_message}
