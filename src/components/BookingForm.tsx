@@ -4,6 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar as CalendarIcon } from 'lucide-react';
+import { bookingSchema } from '@/schemas/validation';
+import { toast } from '@/hooks/use-toast';
 
 interface BookingFormProps {
   valores: Record<string, number>;
@@ -46,11 +48,27 @@ export const BookingForm = ({ valores, onSubmit }: BookingFormProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.whatsapp || !formData.birthdate || !formData.tipo) {
-      alert('Por favor, preencha todos os campos.');
+    
+    // Validate form data with Zod
+    const validation = bookingSchema.safeParse(formData);
+    
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
+      toast({
+        title: 'Erro de validação',
+        description: firstError.message,
+        variant: 'destructive',
+      });
       return;
     }
-    onSubmit(formData);
+    
+    // Pass validated data with required fields
+    onSubmit({
+      name: validation.data.name,
+      whatsapp: validation.data.whatsapp,
+      birthdate: validation.data.birthdate,
+      tipo: validation.data.tipo
+    });
   };
 
   return (

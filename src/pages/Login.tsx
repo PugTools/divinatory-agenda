@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LogIn, Loader2 } from 'lucide-react';
+import { loginSchema } from '@/schemas/validation';
+import { toast } from '@/hooks/use-toast';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -15,8 +17,22 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form data with Zod
+    const validation = loginSchema.safeParse({ email, password });
+    
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
+      toast({
+        title: 'Erro de validação',
+        description: firstError.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setLoading(true);
-    await signIn(email, password);
+    await signIn(validation.data.email, validation.data.password);
     setLoading(false);
   };
 

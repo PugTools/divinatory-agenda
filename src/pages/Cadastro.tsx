@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserPlus, Loader2 } from 'lucide-react';
+import { signUpSchema } from '@/schemas/validation';
+import { toast } from '@/hooks/use-toast';
 
 const Cadastro = () => {
   const [email, setEmail] = useState('');
@@ -18,8 +20,32 @@ const Cadastro = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate form data with Zod
+    const validation = signUpSchema.safeParse({
+      email,
+      password,
+      fullName,
+      displayName
+    });
+    
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
+      toast({
+        title: 'Erro de validação',
+        description: firstError.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setLoading(true);
-    const { error } = await signUp(email, password, fullName, displayName);
+    const { error } = await signUp(
+      validation.data.email,
+      validation.data.password,
+      validation.data.fullName,
+      validation.data.displayName
+    );
     setLoading(false);
     
     if (!error) {
@@ -89,7 +115,9 @@ const Cadastro = () => {
                 minLength={6}
                 disabled={loading}
               />
-              <p className="text-xs text-muted-foreground">Mínimo de 6 caracteres</p>
+              <p className="text-xs text-muted-foreground">
+                Mínimo de 8 caracteres, com letras maiúsculas, minúsculas e números
+              </p>
             </div>
 
             <Button
