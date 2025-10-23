@@ -65,7 +65,8 @@ export const usePriestContext = () => {
       } else if (
         hostname.includes('localhost') || 
         hostname.includes('127.0.0.1') ||
-        hostname.includes('lovableproject.com')
+        hostname.includes('lovableproject.com') ||
+        hostname.includes('lovable.app')
       ) {
         // Development/Lovable mode - get first active priest
         console.log('Using first active priest (dev mode)');
