@@ -46,6 +46,7 @@ export const usePriestContext = () => {
 
     try {
       const hostname = window.location.hostname;
+      console.log('Detecting priest for hostname:', hostname);
       
       // For development, we'll use a query parameter or default to first priest
       const urlParams = new URLSearchParams(window.location.search);
@@ -59,23 +60,38 @@ export const usePriestContext = () => {
 
       if (subdomainParam) {
         // Development mode with query parameter
+        console.log('Using priest parameter:', subdomainParam);
         query = query.eq('subdomain', subdomainParam);
-      } else if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
-        // Development mode - get first active priest
+      } else if (
+        hostname.includes('localhost') || 
+        hostname.includes('127.0.0.1') ||
+        hostname.includes('lovableproject.com')
+      ) {
+        // Development/Lovable mode - get first active priest
+        console.log('Using first active priest (dev mode)');
         query = query.limit(1);
       } else {
         // Production mode - detect from subdomain or custom domain
         const subdomain = hostname.split('.')[0];
+        console.log('Using subdomain/domain detection:', subdomain, hostname);
         query = query.or(`subdomain.eq.${subdomain},custom_domain.eq.${hostname}`);
       }
 
-      const { data: profileData, error: profileError } = await query.single();
+      const { data: profileData, error: profileError } = await query.maybeSingle();
 
-      if (profileError || !profileData) {
-        console.error('Priest not found:', profileError);
+      if (profileError) {
+        console.error('Error loading priest:', profileError);
         setLoading(false);
         return;
       }
+
+      if (!profileData) {
+        console.warn('No priest profile found for this domain');
+        setLoading(false);
+        return;
+      }
+
+      console.log('Priest detected:', profileData.display_name);
 
       setPriestId(profileData.id);
       setProfile(profileData);

@@ -108,23 +108,41 @@ const Index = () => {
   if (!priestId || !profile || !config) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-mystical p-4">
-        <Card className="p-8 max-w-md text-center">
-          <Sparkles className="h-16 w-16 text-primary mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Sacerdote não encontrado</h2>
-          <p className="text-muted-foreground mb-6">
-            Não foi possível identificar o sacerdote para este site.
-          </p>
+        <Card className="p-8 max-w-md text-center space-y-6">
+          <Sparkles className="h-16 w-16 text-primary mx-auto" />
+          <div>
+            <h2 className="text-2xl font-bold mb-2">Nenhum Sacerdote Configurado</h2>
+            <p className="text-muted-foreground">
+              Esta é a página pública de agendamentos. Para que os clientes possam agendar, é necessário:
+            </p>
+          </div>
+          
+          <div className="bg-accent/50 p-4 rounded-lg text-left space-y-2">
+            <p className="text-sm font-semibold">📋 Passo a passo:</p>
+            <ol className="text-sm space-y-1 list-decimal list-inside">
+              <li>Cadastre-se como sacerdote</li>
+              <li>Configure seus horários e valores</li>
+              <li>Compartilhe o link com seus clientes</li>
+            </ol>
+          </div>
+
           <div className="space-y-2">
             <Link to="/cadastro">
-              <Button className="w-full">Cadastrar como Sacerdote</Button>
+              <Button className="w-full bg-gradient-primary">
+                Cadastrar como Sacerdote
+              </Button>
             </Link>
             <Link to="/login">
               <Button variant="outline" className="w-full">
                 <Lock className="mr-2 h-4 w-4" />
-                Acesso Sacerdote
+                Já tenho conta
               </Button>
             </Link>
           </div>
+
+          <p className="text-xs text-muted-foreground">
+            Após o cadastro, você terá acesso ao painel administrativo
+          </p>
         </Card>
       </div>
     );

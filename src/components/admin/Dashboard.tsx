@@ -142,6 +142,14 @@ export const Dashboard = ({ agendamentos, valores }: DashboardProps) => {
               </div>
             </div>
           </div>
+
+          {/* Tip */}
+          <div className="bg-accent/30 border border-accent/50 p-3 rounded-lg">
+            <p className="text-xs">
+              <strong>💡 Dica:</strong> Para testar como seus clientes veem a agenda, abra o link em uma{' '}
+              <strong>janela anônima</strong> (Ctrl+Shift+N no Chrome) ou faça logout antes de visualizar.
+            </p>
+          </div>
         </div>
       </Card>
 
