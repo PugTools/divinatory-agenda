@@ -129,12 +129,12 @@ export const usePriestContext = () => {
     scheduled_time: string;
     valor: number;
     cruz: any;
-  }) => {
+  }): Promise<string> => {
     if (!priestId) {
       throw new Error('Priest not detected');
     }
 
-    const { data, error } = await supabase
+    const { data: appointment, error: appointmentError } = await supabase
       .from('appointments')
       .insert({
         priest_id: priestId,
@@ -145,8 +145,37 @@ export const usePriestContext = () => {
       .select()
       .single();
 
-    if (error) throw error;
-    return data;
+    if (appointmentError) throw appointmentError;
+    
+    // Create PIX payment transaction
+    try {
+      const { data: transaction, error: transactionError } = await supabase
+        .from('payment_transactions')
+        .insert({
+          priest_id: priestId,
+          appointment_id: appointment.id,
+          amount: appointmentData.valor,
+          status: 'pending',
+          payment_method: 'pix',
+          external_id: `PIX-${Date.now()}-${appointment.id.substring(0, 8)}`,
+        })
+        .select()
+        .single();
+
+      if (transactionError) {
+        console.error('Error creating payment transaction:', transactionError);
+      } else {
+        // Update appointment with payment_id
+        await supabase
+          .from('appointments')
+          .update({ payment_id: transaction.id })
+          .eq('id', appointment.id);
+      }
+    } catch (error) {
+      console.error('Error in payment transaction creation:', error);
+    }
+
+    return appointment.id;
   };
 
   const getOccupiedSlots = async (date: string): Promise<string[]> => {
