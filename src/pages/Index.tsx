@@ -67,7 +67,7 @@ const Index = () => {
         client_name: formData.name,
         client_whatsapp: formData.whatsapp,
         client_birthdate: formData.birthdate,
-        game_type_id: gameType?.id || '',
+        game_type_id: gameType?.id || null,
         game_type_name: formData.tipo,
         scheduled_date: selectedDate,
         scheduled_time: selectedTime,

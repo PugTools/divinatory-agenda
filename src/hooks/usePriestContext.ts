@@ -140,7 +140,7 @@ export const usePriestContext = () => {
     client_name: string;
     client_whatsapp: string;
     client_birthdate: string;
-    game_type_id: string;
+    game_type_id: string | null;
     game_type_name: string;
     scheduled_date: string;
     scheduled_time: string;
