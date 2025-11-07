@@ -37,9 +37,22 @@ export const Dashboard = ({ agendamentos, valores }: DashboardProps) => {
   }));
 
   // Get current site URL
-  const siteUrl = window.location.origin;
+  const hostname = window.location.hostname;
+  const isPreview = hostname.includes('lovableproject.com');
+  const isPublished = hostname.includes('lovable.app');
+  
+  // If it's a preview link, show a message to publish first
+  const siteUrl = isPreview 
+    ? 'Publique primeiro para obter o link público'
+    : window.location.origin;
+  
+  const canCopy = !isPreview;
 
   const copyUrl = () => {
+    if (!canCopy) {
+      toast.error('Publique o projeto primeiro para obter o link público');
+      return;
+    }
     navigator.clipboard.writeText(siteUrl);
     setCopied(true);
     toast.success('Link copiado! Compartilhe com seus clientes.');
@@ -47,6 +60,10 @@ export const Dashboard = ({ agendamentos, valores }: DashboardProps) => {
   };
 
   const openPublicSite = () => {
+    if (!canCopy) {
+      toast.error('Publique o projeto primeiro');
+      return;
+    }
     window.open(siteUrl, '_blank');
   };
 
@@ -75,42 +92,66 @@ export const Dashboard = ({ agendamentos, valores }: DashboardProps) => {
           </div>
 
           {/* URL Display */}
-          <div className="bg-background/80 backdrop-blur-sm rounded-lg p-4 border-2 border-dashed border-primary/30">
-            <div className="flex items-center gap-3">
-              <code className="flex-1 text-sm font-mono text-primary break-all">
-                {siteUrl}
-              </code>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={copyUrl}
-                  className="border-primary/30 hover:bg-primary/10"
-                >
-                  {copied ? (
-                    <>
-                      <CheckCircle className="h-4 w-4 mr-1 text-success" />
-                      Copiado!
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4 mr-1" />
-                      Copiar
-                    </>
-                  )}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={openPublicSite}
-                  className="border-primary/30 hover:bg-primary/10"
-                >
-                  <ExternalLink className="h-4 w-4 mr-1" />
-                  Visualizar
-                </Button>
+          {isPreview ? (
+            <div className="bg-warning/10 backdrop-blur-sm rounded-lg p-4 border-2 border-warning/30">
+              <div className="space-y-3">
+                <div className="flex items-start gap-2">
+                  <div className="text-warning mt-0.5">⚠️</div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-warning">Link de Preview Detectado</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      O link atual (<code className="text-xs">lovableproject.com</code>) é apenas para preview e requer login no Lovable.
+                    </p>
+                  </div>
+                </div>
+                <div className="bg-background/50 rounded-lg p-3 space-y-2">
+                  <p className="text-xs font-semibold">📝 Como obter o link público:</p>
+                  <ol className="text-xs space-y-1 list-decimal list-inside text-muted-foreground">
+                    <li>Clique no botão <strong>"Publish"</strong> no topo da tela</li>
+                    <li>Após publicar, um novo link terminando em <code className="text-xs bg-primary/10 px-1 rounded">.lovable.app</code> será gerado</li>
+                    <li>Use esse link <code className="text-xs bg-primary/10 px-1 rounded">.lovable.app</code> para compartilhar com clientes</li>
+                  </ol>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-background/80 backdrop-blur-sm rounded-lg p-4 border-2 border-dashed border-primary/30">
+              <div className="flex items-center gap-3">
+                <code className="flex-1 text-sm font-mono text-primary break-all">
+                  {siteUrl}
+                </code>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={copyUrl}
+                    className="border-primary/30 hover:bg-primary/10"
+                  >
+                    {copied ? (
+                      <>
+                        <CheckCircle className="h-4 w-4 mr-1 text-success" />
+                        Copiado!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4 mr-1" />
+                        Copiar
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={openPublicSite}
+                    className="border-primary/30 hover:bg-primary/10"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    Visualizar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Instructions */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
