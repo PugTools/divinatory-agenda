@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { Appointment, Config } from '@/types/divination';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 interface GameType {
   id: string;
@@ -74,7 +75,7 @@ export const useAppData = () => {
 
       setAppointments(transformed);
     } catch (error: any) {
-      console.error('Error loading appointments:', error);
+      logger.error('Error loading appointments', error);
       toast.error('Erro ao carregar agendamentos');
     }
   };
@@ -92,7 +93,7 @@ export const useAppData = () => {
       if (error) throw error;
       setGameTypes(data || []);
     } catch (error: any) {
-      console.error('Error loading game types:', error);
+      logger.error('Error loading game types', error);
       toast.error('Erro ao carregar tipos de jogos');
     }
   };
@@ -119,7 +120,7 @@ export const useAppData = () => {
         });
       }
     } catch (error: any) {
-      console.error('Error loading config:', error);
+      logger.error('Error loading config', error);
       toast.error('Erro ao carregar configurações');
     }
   };
@@ -152,7 +153,7 @@ export const useAppData = () => {
       toast.success('Agendamento criado com sucesso!');
       await loadAppointments();
     } catch (error: any) {
-      console.error('Error adding appointment:', error);
+      logger.error('Error adding appointment', error);
       toast.error('Erro ao criar agendamento');
     }
   };
@@ -180,7 +181,7 @@ export const useAppData = () => {
       toast.success('Agendamento atualizado!');
       await loadAppointments();
     } catch (error: any) {
-      console.error('Error updating appointment:', error);
+      logger.error('Error updating appointment', error);
       toast.error('Erro ao atualizar agendamento');
     }
   };
@@ -199,7 +200,7 @@ export const useAppData = () => {
       toast.success('Agendamento removido!');
       await loadAppointments();
     } catch (error: any) {
-      console.error('Error removing appointment:', error);
+      logger.error('Error removing appointment', error);
       toast.error('Erro ao remover agendamento');
     }
   };
@@ -223,7 +224,7 @@ export const useAppData = () => {
       toast.success('Valores atualizados!');
       await loadGameTypes();
     } catch (error: any) {
-      console.error('Error updating valores:', error);
+      logger.error('Error updating valores', error);
       toast.error('Erro ao atualizar valores');
     }
   };
@@ -247,7 +248,7 @@ export const useAppData = () => {
       toast.success('Tipo de jogo adicionado!');
       await loadGameTypes();
     } catch (error: any) {
-      console.error('Error adding game type:', error);
+      logger.error('Error adding game type', error);
       toast.error('Erro ao adicionar tipo de jogo');
     }
   };
@@ -266,7 +267,7 @@ export const useAppData = () => {
       toast.success('Tipo de jogo removido!');
       await loadGameTypes();
     } catch (error: any) {
-      console.error('Error removing game type:', error);
+      logger.error('Error removing game type', error);
       toast.error('Erro ao remover tipo de jogo');
     }
   };
@@ -291,7 +292,7 @@ export const useAppData = () => {
       setConfig(newConfig);
       toast.success('Configurações atualizadas!');
     } catch (error: any) {
-      console.error('Error updating config:', error);
+      logger.error('Error updating config', error);
       toast.error('Erro ao atualizar configurações');
     }
   };

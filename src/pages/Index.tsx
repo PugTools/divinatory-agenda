@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Sparkles, Lock, Loader2 } from 'lucide-react';
 import { calculateCruz } from '@/utils/cruz-calculator';
 import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 const Index = () => {
   const {
@@ -84,7 +85,7 @@ const Index = () => {
       toast.success('Agendamento criado! Complete o pagamento.');
     } catch (error) {
       toast.error('Erro ao criar agendamento.');
-      console.error(error);
+      logger.error('Error creating appointment', error);
     }
   };
 
