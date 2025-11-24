@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Appointment } from '@/types/divination';
-import { Calendar, TrendingUp, Package, Share2, Copy, ExternalLink, CheckCircle } from 'lucide-react';
+import { Calendar, TrendingUp, Package, Share2, Copy, ExternalLink, CheckCircle, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState } from 'react';
 
@@ -67,6 +67,33 @@ export const Dashboard = ({ agendamentos, valores }: DashboardProps) => {
     window.open(siteUrl, '_blank');
   };
 
+  const previewAsClient = () => {
+    if (!canCopy) {
+      toast.error('Publique o projeto primeiro');
+      return;
+    }
+    navigator.clipboard.writeText(siteUrl);
+    toast.success('Link copiado!', {
+      description: (
+        <div className="space-y-2 mt-2">
+          <p className="font-semibold">Como testar como cliente:</p>
+          <ol className="list-decimal list-inside text-sm space-y-1">
+            <li>Abra uma janela anônima:
+              <ul className="list-disc list-inside ml-4 text-xs mt-1">
+                <li>Chrome/Edge: Ctrl+Shift+N (Win) ou ⌘+Shift+N (Mac)</li>
+                <li>Firefox: Ctrl+Shift+P (Win) ou ⌘+Shift+P (Mac)</li>
+                <li>Safari: ⌘+Shift+N</li>
+              </ul>
+            </li>
+            <li>Cole o link copiado (Ctrl+V ou ⌘+V)</li>
+            <li>Veja exatamente o que seus clientes veem!</li>
+          </ol>
+        </div>
+      ),
+      duration: 10000,
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Compartilhar Link Card */}
@@ -123,7 +150,7 @@ export const Dashboard = ({ agendamentos, valores }: DashboardProps) => {
                 <code className="flex-1 text-sm font-mono text-primary break-all">
                   {siteUrl}
                 </code>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Button
                     size="sm"
                     variant="outline"
@@ -149,7 +176,16 @@ export const Dashboard = ({ agendamentos, valores }: DashboardProps) => {
                     className="border-primary/30 hover:bg-primary/10"
                   >
                     <ExternalLink className="h-4 w-4 mr-1" />
-                    Visualizar
+                    Abrir
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={previewAsClient}
+                    className="bg-accent hover:bg-accent/90"
+                  >
+                    <Lock className="h-4 w-4 mr-1" />
+                    Preview Cliente
                   </Button>
                 </div>
               </div>
