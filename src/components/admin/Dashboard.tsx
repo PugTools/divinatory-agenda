@@ -79,13 +79,16 @@ export const Dashboard = ({ agendamentos, valores }: DashboardProps) => {
               </div>
               <div>
                 <h3 className="text-xl font-semibold flex items-center gap-2">
-                  Compartilhe sua Agenda
+                  Link da Agenda Pública
                   <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">
-                    Público
+                    Para Clientes
                   </Badge>
                 </h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Envie este link para seus clientes agendarem consultas
+                  Este é o link que seus <strong>clientes</strong> usam para agendar consultas
+                </p>
+                <p className="text-xs text-warning mt-1">
+                  ⚠️ <strong>Importante:</strong> Este NÃO é o link de login do sacerdote. É a agenda pública para clientes!
                 </p>
               </div>
             </div>
@@ -184,12 +187,19 @@ export const Dashboard = ({ agendamentos, valores }: DashboardProps) => {
             </div>
           </div>
 
-          {/* Tip */}
-          <div className="bg-accent/30 border border-accent/50 p-3 rounded-lg">
-            <p className="text-xs">
-              <strong>💡 Dica:</strong> Para testar como seus clientes veem a agenda, abra o link em uma{' '}
-              <strong>janela anônima</strong> (Ctrl+Shift+N no Chrome) ou faça logout antes de visualizar.
-            </p>
+          {/* Tips */}
+          <div className="space-y-2">
+            <div className="bg-accent/30 border border-accent/50 p-3 rounded-lg">
+              <p className="text-xs">
+                <strong>💡 Dica de teste:</strong> Para ver como seus clientes veem a agenda, abra o link em uma{' '}
+                <strong>janela anônima</strong> (Ctrl+Shift+N) ou faça logout antes de visualizar.
+              </p>
+            </div>
+            <div className="bg-primary/10 border border-primary/30 p-3 rounded-lg">
+              <p className="text-xs">
+                <strong>ℹ️ Diferença importante:</strong> Este link (<strong>página pública</strong>) é diferente do link de login do sacerdote (<code className="text-xs">/login</code>) e da área administrativa (<code className="text-xs">/admin</code>).
+              </p>
+            </div>
           </div>
         </div>
       </Card>
