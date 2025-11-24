@@ -1,11 +1,13 @@
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Appointment } from '@/types/divination';
-import { Calendar, TrendingUp, Package, Share2, Copy, ExternalLink, CheckCircle, Lock } from 'lucide-react';
+import { Calendar, TrendingUp, Package, Share2, Copy, ExternalLink, CheckCircle, Lock, QrCode, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState } from 'react';
+import QRCodeSVG from 'react-qr-code';
 
 interface DashboardProps {
   agendamentos: Appointment[];
@@ -16,6 +18,7 @@ const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
 export const Dashboard = ({ agendamentos, valores }: DashboardProps) => {
   const [copied, setCopied] = useState(false);
+  const [showQRCode, setShowQRCode] = useState(false);
   
   const futureCount = agendamentos.filter(a => {
     const date = new Date(a.dataEscolhida);
@@ -92,6 +95,32 @@ export const Dashboard = ({ agendamentos, valores }: DashboardProps) => {
       ),
       duration: 10000,
     });
+  };
+
+  const downloadQRCode = () => {
+    const svg = document.getElementById('qr-code-svg');
+    if (!svg) return;
+
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx?.drawImage(img, 0, 0);
+      const pngFile = canvas.toDataURL('image/png');
+
+      const downloadLink = document.createElement('a');
+      downloadLink.download = 'qrcode-agenda.png';
+      downloadLink.href = pngFile;
+      downloadLink.click();
+      
+      toast.success('QR Code baixado com sucesso!');
+    };
+
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
   };
 
   return (
@@ -187,6 +216,47 @@ export const Dashboard = ({ agendamentos, valores }: DashboardProps) => {
                     <Lock className="h-4 w-4 mr-1" />
                     Preview Cliente
                   </Button>
+                  <Dialog open={showQRCode} onOpenChange={setShowQRCode}>
+                    <DialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-primary/30 hover:bg-primary/10"
+                        disabled={!canCopy}
+                      >
+                        <QrCode className="h-4 w-4 mr-1" />
+                        QR Code
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>QR Code da Agenda</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="flex justify-center p-6 bg-white rounded-lg">
+                          <QRCodeSVG
+                            id="qr-code-svg"
+                            value={siteUrl}
+                            size={256}
+                            level="H"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground text-center">
+                            Compartilhe este QR Code para clientes acessarem sua agenda facilmente
+                          </p>
+                          <Button
+                            onClick={downloadQRCode}
+                            className="w-full"
+                            variant="default"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Baixar QR Code
+                          </Button>
+                        </div>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
             </div>
