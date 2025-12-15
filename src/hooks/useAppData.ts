@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
-import { Appointment, Config } from '@/types/divination';
+import { Appointment, Config, PriestProfile } from '@/types/divination';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
 
@@ -25,6 +25,7 @@ export const useAppData = () => {
     weekdays: [],
     extraDates: []
   });
+  const [profile, setProfile] = useState<PriestProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Load all data when user is authenticated
@@ -42,9 +43,36 @@ export const useAppData = () => {
     await Promise.all([
       loadAppointments(),
       loadGameTypes(),
-      loadConfig()
+      loadConfig(),
+      loadProfile()
     ]);
     setLoading(false);
+  };
+
+  const loadProfile = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, display_name, subdomain, bio, avatar_url')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setProfile({
+          id: data.id,
+          display_name: data.display_name || '',
+          subdomain: data.subdomain || '',
+          bio: data.bio || '',
+          avatar_url: data.avatar_url
+        });
+      }
+    } catch (error: any) {
+      logger.error('Error loading profile', error);
+    }
   };
 
   const loadAppointments = async () => {
@@ -297,6 +325,44 @@ export const useAppData = () => {
     }
   };
 
+  const updateProfile = async (updates: Partial<PriestProfile>) => {
+    if (!user) return;
+
+    try {
+      // Check if subdomain is unique (if being updated)
+      if (updates.subdomain && updates.subdomain !== profile?.subdomain) {
+        const { data: existing } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('subdomain', updates.subdomain)
+          .neq('id', user.id)
+          .maybeSingle();
+
+        if (existing) {
+          toast.error('Este identificador já está em uso. Escolha outro.');
+          return;
+        }
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          display_name: updates.display_name,
+          subdomain: updates.subdomain,
+          bio: updates.bio
+        })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setProfile(prev => prev ? { ...prev, ...updates } : null);
+      toast.success('Perfil atualizado!');
+    } catch (error: any) {
+      logger.error('Error updating profile', error);
+      toast.error('Erro ao atualizar perfil');
+    }
+  };
+
   // Convert gameTypes to valores format for backward compatibility
   const valores: Record<string, number> = gameTypes.reduce((acc, gt) => {
     acc[gt.name] = gt.value;
@@ -307,12 +373,14 @@ export const useAppData = () => {
     agendamentos: appointments,
     valores,
     config,
+    profile,
     loading,
     addAppointment,
     updateAppointment,
     removeAppointment,
     updateValores,
     updateConfig,
+    updateProfile,
     gameTypes,
     addGameType,
     removeGameType,

@@ -7,6 +7,7 @@ import { AppointmentsTab } from '@/components/admin/AppointmentsTab';
 import { ValoresTab } from '@/components/admin/ValoresTab';
 import { ConfigTab } from '@/components/admin/ConfigTab';
 import { FinanceiroTab } from '@/components/admin/FinanceiroTab';
+import { ProfileTab } from '@/components/admin/ProfileTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -21,10 +22,12 @@ const Admin = () => {
     agendamentos,
     valores,
     config,
+    profile,
     updateAppointment,
     removeAppointment,
     updateValores,
-    updateConfig
+    updateConfig,
+    updateProfile
   } = useAppData();
 
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
@@ -108,16 +111,17 @@ const Admin = () => {
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="dashboard">📊 Dashboard</TabsTrigger>
               <TabsTrigger value="agendamentos">📅 Agendamentos</TabsTrigger>
               <TabsTrigger value="valores">💰 Valores</TabsTrigger>
               <TabsTrigger value="config">⚙️ Config</TabsTrigger>
+              <TabsTrigger value="perfil">👤 Perfil</TabsTrigger>
               <TabsTrigger value="financeiro">💳 Financeiro</TabsTrigger>
             </TabsList>
 
             <TabsContent value="dashboard" className="mt-6">
-              <Dashboard agendamentos={agendamentos} valores={valores} />
+              <Dashboard agendamentos={agendamentos} valores={valores} subdomain={profile?.subdomain} />
             </TabsContent>
 
             <TabsContent value="agendamentos" className="mt-6">
@@ -137,6 +141,10 @@ const Admin = () => {
 
             <TabsContent value="config" className="mt-6">
               <ConfigTab config={config} onUpdateConfig={updateConfig} />
+            </TabsContent>
+
+            <TabsContent value="perfil" className="mt-6">
+              <ProfileTab profile={profile} onUpdateProfile={updateProfile} />
             </TabsContent>
 
             <TabsContent value="financeiro" className="mt-6">
