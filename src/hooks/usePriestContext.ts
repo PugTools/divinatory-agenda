@@ -35,6 +35,8 @@ export const usePriestContext = () => {
   const [profile, setProfile] = useState<PriestProfile | null>(null);
   const [config, setConfig] = useState<PriestConfig | null>(null);
   const [gameTypes, setGameTypes] = useState<GameType[]>([]);
+  const [allPriests, setAllPriests] = useState<PriestProfile[]>([]);
+  const [showPriestSelection, setShowPriestSelection] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,46 +50,73 @@ export const usePriestContext = () => {
       const hostname = window.location.hostname;
       console.log('Detecting priest for hostname:', hostname);
       
-      // For development, we'll use a query parameter or default to first priest
+      // Check for priest parameter in URL
       const urlParams = new URLSearchParams(window.location.search);
       const subdomainParam = urlParams.get('priest');
       
-      // Only fetch non-sensitive display information for public access
-      let query = supabase
+      // First, load all active priests for potential selection
+      const { data: allPriestsData, error: allPriestsError } = await supabase
         .from('profiles')
         .select('id, display_name, bio, avatar_url, subdomain, custom_domain, is_active')
         .eq('is_active', true);
 
+      if (!allPriestsError && allPriestsData) {
+        setAllPriests(allPriestsData);
+      }
+
+      let profileData: PriestProfile | null = null;
+
       if (subdomainParam) {
-        // Development mode with query parameter
+        // URL has priest parameter - find by subdomain
         console.log('Using priest parameter:', subdomainParam);
-        query = query.eq('subdomain', subdomainParam);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, display_name, bio, avatar_url, subdomain, custom_domain, is_active')
+          .eq('subdomain', subdomainParam)
+          .eq('is_active', true)
+          .maybeSingle();
+
+        if (!error) profileData = data;
       } else if (
         hostname.includes('localhost') || 
         hostname.includes('127.0.0.1') ||
         hostname.includes('lovableproject.com') ||
         hostname.includes('lovable.app')
       ) {
-        // Development/Lovable mode - get first active priest
-        console.log('Using first active priest (dev mode)');
-        query = query.limit(1);
+        // Development/Lovable mode - check if there are multiple priests
+        console.log('Dev mode - checking for multiple priests');
+        
+        if (allPriestsData && allPriestsData.length > 1) {
+          // Multiple priests available - show selection
+          console.log('Multiple priests found, showing selection');
+          setShowPriestSelection(true);
+          setLoading(false);
+          return;
+        } else if (allPriestsData && allPriestsData.length === 1) {
+          // Only one priest - use it directly
+          profileData = allPriestsData[0];
+        }
       } else {
         // Production mode - detect from subdomain or custom domain
         const subdomain = hostname.split('.')[0];
         console.log('Using subdomain/domain detection:', subdomain, hostname);
-        query = query.or(`subdomain.eq.${subdomain},custom_domain.eq.${hostname}`);
-      }
+        
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, display_name, bio, avatar_url, subdomain, custom_domain, is_active')
+          .eq('is_active', true)
+          .or(`subdomain.eq.${subdomain},custom_domain.eq.${hostname}`)
+          .maybeSingle();
 
-      const { data: profileData, error: profileError } = await query.maybeSingle();
-
-      if (profileError) {
-        console.error('Error loading priest:', profileError);
-        setLoading(false);
-        return;
+        if (!error) profileData = data;
       }
 
       if (!profileData) {
         console.warn('No priest profile found for this domain');
+        // If there are priests available, show selection
+        if (allPriestsData && allPriestsData.length > 0) {
+          setShowPriestSelection(true);
+        }
         setLoading(false);
         return;
       }
@@ -218,6 +247,8 @@ export const usePriestContext = () => {
     profile,
     config,
     gameTypes,
+    allPriests,
+    showPriestSelection,
     loading,
     createAppointment,
     getOccupiedSlots
