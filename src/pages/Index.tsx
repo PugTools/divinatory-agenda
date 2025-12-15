@@ -5,6 +5,7 @@ import { Calendar } from '@/components/Calendar';
 import { TimeSlotPicker } from '@/components/TimeSlotPicker';
 import { BookingForm } from '@/components/BookingForm';
 import { PaymentModal } from '@/components/PaymentModal';
+import PriestSelection from '@/pages/PriestSelection';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -19,6 +20,8 @@ const Index = () => {
     profile,
     config,
     gameTypes,
+    allPriests,
+    showPriestSelection,
     loading,
     createAppointment,
     getOccupiedSlots
@@ -104,6 +107,11 @@ const Index = () => {
         </div>
       </div>
     );
+  }
+
+  // Show priest selection when multiple priests are available
+  if (showPriestSelection && allPriests.length > 0) {
+    return <PriestSelection priests={allPriests} />;
   }
 
   if (!priestId || !profile || !config) {
