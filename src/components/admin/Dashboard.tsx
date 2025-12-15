@@ -12,11 +12,12 @@ import QRCodeSVG from 'react-qr-code';
 interface DashboardProps {
   agendamentos: Appointment[];
   valores: Record<string, number>;
+  subdomain?: string;
 }
 
 const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-export const Dashboard = ({ agendamentos, valores }: DashboardProps) => {
+export const Dashboard = ({ agendamentos, valores, subdomain }: DashboardProps) => {
   const [copied, setCopied] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   
@@ -44,10 +45,17 @@ export const Dashboard = ({ agendamentos, valores }: DashboardProps) => {
   const isPreview = hostname.includes('lovableproject.com');
   const isPublished = hostname.includes('lovable.app');
   
-  // If it's a preview link, show a message to publish first
-  const siteUrl = isPreview 
+  // Generate the correct URL based on subdomain
+  const baseUrl = isPreview 
     ? 'Publique primeiro para obter o link público'
     : window.location.origin;
+  
+  // If subdomain is configured, use the personalized link
+  const siteUrl = isPreview 
+    ? baseUrl
+    : subdomain 
+      ? `${window.location.origin}/?priest=${subdomain}`
+      : window.location.origin;
   
   const canCopy = !isPreview;
 
@@ -143,6 +151,11 @@ export const Dashboard = ({ agendamentos, valores }: DashboardProps) => {
                 <p className="text-sm text-muted-foreground mt-1">
                   Este é o link que seus <strong>clientes</strong> usam para agendar consultas
                 </p>
+                {!subdomain && !isPreview && (
+                  <p className="text-xs text-warning mt-1">
+                    💡 Configure seu identificador na aba <strong>Perfil</strong> para ter um link personalizado
+                  </p>
+                )}
                 <p className="text-xs text-warning mt-1">
                   ⚠️ <strong>Importante:</strong> Este NÃO é o link de login do sacerdote. É a agenda pública para clientes!
                 </p>

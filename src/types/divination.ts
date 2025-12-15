@@ -38,6 +38,14 @@ export interface Config {
   extraDates: string[];
 }
 
+export interface PriestProfile {
+  id: string;
+  display_name: string;
+  subdomain: string;
+  bio: string;
+  avatar_url: string | null;
+}
+
 export interface AppData {
   agendamentos: Appointment[];
   valores: Record<string, number>;
