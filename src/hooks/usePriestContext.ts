@@ -175,53 +175,66 @@ export const usePriestContext = () => {
     scheduled_time: string;
     valor: number;
     cruz: any;
-  }): Promise<string> => {
+  }): Promise<any> => {
     if (!priestId) {
       throw new Error('Priest not detected');
     }
 
-    const { data: appointment, error: appointmentError } = await supabase
+    // Generate appointment ID client-side to avoid SELECT after INSERT
+    // (public users can't SELECT from appointments due to RLS)
+    const appointmentId = crypto.randomUUID();
+
+    const { error: appointmentError } = await supabase
       .from('appointments')
       .insert({
+        id: appointmentId,
         priest_id: priestId,
         ...appointmentData,
         status: 'pending',
         payment_status: 'pending'
-      })
-      .select()
-      .single();
+      });
 
-    if (appointmentError) throw appointmentError;
+    if (appointmentError) {
+      console.error('Error creating appointment:', appointmentError);
+      throw appointmentError;
+    }
     
     // Create PIX payment transaction
+    const transactionId = crypto.randomUUID();
     try {
-      const { data: transaction, error: transactionError } = await supabase
+      const { error: transactionError } = await supabase
         .from('payment_transactions')
         .insert({
+          id: transactionId,
           priest_id: priestId,
-          appointment_id: appointment.id,
+          appointment_id: appointmentId,
           amount: appointmentData.valor,
           status: 'pending',
           payment_method: 'pix',
-          external_id: `PIX-${Date.now()}-${appointment.id.substring(0, 8)}`,
-        })
-        .select()
-        .single();
+          external_id: `PIX-${Date.now()}-${appointmentId.substring(0, 8)}`,
+        });
 
       if (transactionError) {
         console.error('Error creating payment transaction:', transactionError);
       } else {
-        // Update appointment with payment_id
+        // Update appointment with payment_id (this may fail for public users, but that's ok)
         await supabase
           .from('appointments')
-          .update({ payment_id: transaction.id })
-          .eq('id', appointment.id);
+          .update({ payment_id: transactionId })
+          .eq('id', appointmentId);
       }
     } catch (error) {
       console.error('Error in payment transaction creation:', error);
     }
 
-    return appointment.id;
+    // Return the appointment data for the payment modal
+    return {
+      id: appointmentId,
+      ...appointmentData,
+      priest_id: priestId,
+      status: 'pending',
+      payment_status: 'pending'
+    };
   };
 
   const getOccupiedSlots = async (date: string): Promise<string[]> => {
