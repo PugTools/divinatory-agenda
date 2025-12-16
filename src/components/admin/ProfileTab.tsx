@@ -54,10 +54,10 @@ export const ProfileTab = ({ profile, onUpdateProfile }: ProfileTabProps) => {
   };
 
   const hostname = window.location.hostname;
+  const isPreview = hostname.includes('lovableproject.com');
   const isPublished = hostname.includes('lovable.app');
-  const baseUrl = isPublished ? window.location.origin : 'https://seu-site.lovable.app';
   const personalizedLink = subdomain 
-    ? `${baseUrl}/?priest=${subdomain}`
+    ? `${window.location.origin}/?priest=${subdomain}`
     : 'Configure seu identificador para gerar o link';
 
   return (
@@ -150,6 +150,13 @@ export const ProfileTab = ({ profile, onUpdateProfile }: ProfileTabProps) => {
 
         {subdomain ? (
           <div className="space-y-3">
+            {isPreview && (
+              <div className="bg-warning/10 border border-warning/30 rounded-lg p-3">
+                <p className="text-xs text-warning">
+                  ⚠️ <strong>Modo Preview:</strong> Publique o projeto para obter o link definitivo para compartilhar com clientes.
+                </p>
+              </div>
+            )}
             <div className="bg-background/80 backdrop-blur-sm rounded-lg p-4 border-2 border-dashed border-primary/30">
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5 text-success flex-shrink-0" />
