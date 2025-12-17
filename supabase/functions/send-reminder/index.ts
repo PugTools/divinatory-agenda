@@ -15,8 +15,6 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    console.log("Running reminder check...");
-
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -40,7 +38,6 @@ const handler = async (req: Request): Promise<Response> => {
     if (fetchError) throw fetchError;
 
     if (!appointments || appointments.length === 0) {
-      console.log("No appointments need reminders");
       return new Response(
         JSON.stringify({ message: "No reminders to send" }),
         {
@@ -50,7 +47,8 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log(`Sending reminders for ${appointments.length} appointments`);
+    let emailsSent = 0;
+    let emailsFailed = 0;
 
     // Send reminders
     for (const appointment of appointments) {
@@ -115,9 +113,21 @@ const handler = async (req: Request): Promise<Response> => {
           </html>
         `;
 
-        // Send email reminder (if email exists - you might want to add email field to appointments)
-        // For now, log the reminder
-        console.log(`Reminder for ${appointment.client_name} - ${appointment.client_whatsapp}`);
+        // Send email if client has email
+        if (appointment.client_email) {
+          const emailResponse = await resend.emails.send({
+            from: "Ifá Consultoria <onboarding@resend.dev>",
+            to: [appointment.client_email],
+            subject: "⏰ Lembrete: Sua consulta é amanhã!",
+            html: reminderHtml,
+          });
+
+          if (emailResponse.error) {
+            throw new Error(emailResponse.error.message);
+          }
+
+          emailsSent++;
+        }
 
         // Update reminder_sent flag
         await supabase
@@ -130,12 +140,12 @@ const handler = async (req: Request): Promise<Response> => {
           appointment_id: appointment.id,
           priest_id: appointment.priest_id,
           type: "reminder",
-          status: "sent",
+          status: appointment.client_email ? "sent" : "skipped_no_email",
         });
 
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        console.error(`Error sending reminder for appointment ${appointment.id}:`, error);
+        emailsFailed++;
         
         await supabase.from("notifications_log").insert({
           appointment_id: appointment.id,
@@ -150,7 +160,7 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Sent ${appointments.length} reminders` 
+        message: `Processed ${appointments.length} reminders. Sent: ${emailsSent}, Failed: ${emailsFailed}` 
       }),
       {
         status: 200,
@@ -158,11 +168,11 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
 
-  } catch (error: any) {
-    console.error("Error in reminder function:", error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },

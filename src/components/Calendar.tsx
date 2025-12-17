@@ -27,9 +27,6 @@ export const Calendar = ({ selectedDate, onSelectDate, disabledDates = [], weekd
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
-  // Debug: log weekdays to console
-  console.log('Calendar weekdays config:', weekdays);
-
   const generateCalendarDays = (): CalendarDay[] => {
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
@@ -65,16 +62,6 @@ export const Calendar = ({ selectedDate, onSelectDate, disabledDates = [], weekd
       const extraAllowed = extraDates.includes(iso);
       const isOccupied = disabledDates.includes(iso);
       const allowed = !isPast && (weekdayAllowed || extraAllowed) && !isOccupied;
-
-      // Debug log for all days this month
-      console.log(`${i}/${currentMonth + 1} (${DAY_NAMES[date.getDay()]}):`, {
-        weekday: date.getDay(),
-        weekdayAllowed,
-        extraAllowed,
-        isPast,
-        isOccupied,
-        allowed
-      });
 
       days.push({
         date: iso,

@@ -12,6 +12,7 @@ interface BookingFormProps {
   onSubmit: (data: {
     name: string;
     whatsapp: string;
+    email?: string;
     birthdate: string;
     tipo: string;
   }) => void;
@@ -21,6 +22,7 @@ export const BookingForm = ({ valores, onSubmit }: BookingFormProps) => {
   const [formData, setFormData] = useState({
     name: '',
     whatsapp: '',
+    email: '',
     birthdate: '',
     tipo: ''
   });
@@ -66,6 +68,7 @@ export const BookingForm = ({ valores, onSubmit }: BookingFormProps) => {
     onSubmit({
       name: validation.data.name,
       whatsapp: validation.data.whatsapp,
+      email: formData.email || undefined,
       birthdate: validation.data.birthdate,
       tipo: validation.data.tipo
     });
@@ -94,6 +97,17 @@ export const BookingForm = ({ valores, onSubmit }: BookingFormProps) => {
             placeholder="(XX) 9XXXX-XXXX"
             maxLength={15}
             required
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="email">Email (opcional)</Label>
+          <Input
+            id="email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            placeholder="seu@email.com"
           />
         </div>
 

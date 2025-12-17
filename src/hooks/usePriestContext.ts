@@ -48,7 +48,6 @@ export const usePriestContext = () => {
 
     try {
       const hostname = window.location.hostname;
-      console.log('Detecting priest for hostname:', hostname);
       
       // Check for priest parameter in URL
       const urlParams = new URLSearchParams(window.location.search);
@@ -68,7 +67,6 @@ export const usePriestContext = () => {
 
       if (subdomainParam) {
         // URL has priest parameter - find by subdomain
-        console.log('Using priest parameter:', subdomainParam);
         const { data, error } = await supabase
           .from('profiles')
           .select('id, display_name, bio, avatar_url, subdomain, custom_domain, is_active')
@@ -84,11 +82,8 @@ export const usePriestContext = () => {
         hostname.includes('lovable.app')
       ) {
         // Development/Lovable mode - check if there are multiple priests
-        console.log('Dev mode - checking for multiple priests');
-        
         if (allPriestsData && allPriestsData.length > 1) {
           // Multiple priests available - show selection
-          console.log('Multiple priests found, showing selection');
           setShowPriestSelection(true);
           setLoading(false);
           return;
@@ -99,7 +94,6 @@ export const usePriestContext = () => {
       } else {
         // Production mode - detect from subdomain or custom domain
         const subdomain = hostname.split('.')[0];
-        console.log('Using subdomain/domain detection:', subdomain, hostname);
         
         const { data, error } = await supabase
           .from('profiles')
@@ -112,7 +106,6 @@ export const usePriestContext = () => {
       }
 
       if (!profileData) {
-        console.warn('No priest profile found for this domain');
         // If there are priests available, show selection
         if (allPriestsData && allPriestsData.length > 0) {
           setShowPriestSelection(true);
@@ -120,8 +113,6 @@ export const usePriestContext = () => {
         setLoading(false);
         return;
       }
-
-      console.log('Priest detected:', profileData.display_name);
 
       setPriestId(profileData.id);
       setProfile(profileData);
@@ -159,7 +150,7 @@ export const usePriestContext = () => {
       }
 
     } catch (error) {
-      console.error('Error detecting priest:', error);
+      // Silent error - no console.log in production
     } finally {
       setLoading(false);
     }
@@ -168,6 +159,7 @@ export const usePriestContext = () => {
   const createAppointment = async (appointmentData: {
     client_name: string;
     client_whatsapp: string;
+    client_email?: string;
     client_birthdate: string;
     game_type_id: string | null;
     game_type_name: string;
@@ -181,7 +173,6 @@ export const usePriestContext = () => {
     }
 
     // Generate appointment ID client-side to avoid SELECT after INSERT
-    // (public users can't SELECT from appointments due to RLS)
     const appointmentId = crypto.randomUUID();
 
     const { error: appointmentError } = await supabase
@@ -195,7 +186,6 @@ export const usePriestContext = () => {
       });
 
     if (appointmentError) {
-      console.error('Error creating appointment:', appointmentError);
       throw appointmentError;
     }
     
@@ -214,17 +204,15 @@ export const usePriestContext = () => {
           external_id: `PIX-${Date.now()}-${appointmentId.substring(0, 8)}`,
         });
 
-      if (transactionError) {
-        console.error('Error creating payment transaction:', transactionError);
-      } else {
-        // Update appointment with payment_id (this may fail for public users, but that's ok)
+      if (!transactionError) {
+        // Update appointment with payment_id
         await supabase
           .from('appointments')
           .update({ payment_id: transactionId })
           .eq('id', appointmentId);
       }
     } catch (error) {
-      console.error('Error in payment transaction creation:', error);
+      // Silent error handling for payment transaction
     }
 
     // Return the appointment data for the payment modal
@@ -245,12 +233,12 @@ export const usePriestContext = () => {
         .from('appointments')
         .select('scheduled_time')
         .eq('priest_id', priestId)
-        .eq('scheduled_date', date);
+        .eq('scheduled_date', date)
+        .neq('status', 'cancelled');
 
       if (error) throw error;
       return data.map(apt => apt.scheduled_time);
     } catch (error) {
-      console.error('Error loading occupied slots:', error);
       return [];
     }
   };
