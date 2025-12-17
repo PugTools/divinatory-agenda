@@ -146,7 +146,7 @@ export const useFinancialData = () => {
         .from('appointments')
         .update({ 
           payment_status: status,
-          status: status === 'paid' ? 'confirmed' : 'pending'
+          status: status === 'paid' ? 'confirmed' : 'cancelled'
         })
         .eq('payment_id', transactionId);
 
