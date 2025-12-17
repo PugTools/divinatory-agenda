@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { Resend } from "npm:resend@4.0.0";
+import { Resend } from "https://esm.sh/resend@4.0.0";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -133,7 +133,8 @@ const handler = async (req: Request): Promise<Response> => {
           status: "sent",
         });
 
-      } catch (error) {
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         console.error(`Error sending reminder for appointment ${appointment.id}:`, error);
         
         await supabase.from("notifications_log").insert({
@@ -141,7 +142,7 @@ const handler = async (req: Request): Promise<Response> => {
           priest_id: appointment.priest_id,
           type: "reminder",
           status: "failed",
-          error_message: error.message,
+          error_message: errorMessage,
         });
       }
     }
