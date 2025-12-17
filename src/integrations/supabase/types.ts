@@ -17,6 +17,7 @@ export type Database = {
       appointments: {
         Row: {
           client_birthdate: string
+          client_email: string | null
           client_name: string
           client_whatsapp: string
           confirmation_sent: boolean | null
@@ -38,6 +39,7 @@ export type Database = {
         }
         Insert: {
           client_birthdate: string
+          client_email?: string | null
           client_name: string
           client_whatsapp: string
           confirmation_sent?: boolean | null
@@ -59,6 +61,7 @@ export type Database = {
         }
         Update: {
           client_birthdate?: string
+          client_email?: string | null
           client_name?: string
           client_whatsapp?: string
           confirmation_sent?: boolean | null
