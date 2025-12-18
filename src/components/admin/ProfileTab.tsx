@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { User, Globe, Save, AlertCircle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { subdomainSchema } from '@/schemas/validation';
 
 interface ProfileTabProps {
   profile: PriestProfile | null;
@@ -28,16 +29,42 @@ export const ProfileTab = ({ profile, onUpdateProfile }: ProfileTabProps) => {
     }
   }, [profile]);
 
+  const [subdomainError, setSubdomainError] = useState<string | null>(null);
+
+  const validateSubdomain = (value: string) => {
+    if (!value) {
+      setSubdomainError(null);
+      return true;
+    }
+    
+    const result = subdomainSchema.safeParse(value);
+    if (!result.success) {
+      setSubdomainError(result.error.errors[0].message);
+      return false;
+    }
+    setSubdomainError(null);
+    return true;
+  };
+
+  const handleSubdomainChange = (value: string) => {
+    const sanitized = value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+    setSubdomain(sanitized);
+    if (sanitized) {
+      validateSubdomain(sanitized);
+    } else {
+      setSubdomainError(null);
+    }
+  };
+
   const handleSave = async () => {
     if (!displayName.trim()) {
       toast.error('Nome de exibição é obrigatório');
       return;
     }
 
-    // Validate subdomain format
-    const subdomainRegex = /^[a-z0-9-]+$/;
-    if (subdomain && !subdomainRegex.test(subdomain)) {
-      toast.error('Identificador deve conter apenas letras minúsculas, números e hífens');
+    // Validate subdomain with advanced rules
+    if (subdomain && !validateSubdomain(subdomain)) {
+      toast.error(subdomainError || 'Identificador inválido');
       return;
     }
 
@@ -101,14 +128,21 @@ export const ProfileTab = ({ profile, onUpdateProfile }: ProfileTabProps) => {
               <Input
                 id="subdomain"
                 value={subdomain}
-                onChange={(e) => setSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                onChange={(e) => handleSubdomainChange(e.target.value)}
                 placeholder="pai-joao"
-                className="flex-1"
+                className={`flex-1 ${subdomainError ? 'border-destructive' : ''}`}
               />
             </div>
-            <p className="text-xs text-muted-foreground">
-              Usado para criar seu link personalizado. Use apenas letras minúsculas, números e hífens.
-            </p>
+            {subdomainError ? (
+              <p className="text-xs text-destructive flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {subdomainError}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Mínimo 3 caracteres. Deve começar com letra e terminar com letra/número.
+              </p>
+            )}
           </div>
 
           {/* Bio */}
