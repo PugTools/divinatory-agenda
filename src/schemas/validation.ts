@@ -92,8 +92,27 @@ export const configSchema = z.object({
   extra_dates: z.array(z.string())
 });
 
+// Subdomain validation - advanced rules
+export const subdomainSchema = z.string()
+  .trim()
+  .toLowerCase()
+  .min(3, 'Identificador deve ter pelo menos 3 caracteres')
+  .max(30, 'Identificador deve ter no máximo 30 caracteres')
+  .regex(/^[a-z][a-z0-9-]*[a-z0-9]$/, 'Deve começar com letra, terminar com letra/número, e conter apenas letras, números e hífens')
+  .refine((val) => !val.includes('--'), 'Não pode conter hífens consecutivos')
+  .refine((val) => !RESERVED_SUBDOMAINS.includes(val), 'Este identificador está reservado');
+
+// Reserved subdomains that cannot be used
+const RESERVED_SUBDOMAINS = [
+  'admin', 'api', 'app', 'auth', 'blog', 'cdn', 'dashboard', 
+  'dev', 'docs', 'ftp', 'help', 'login', 'mail', 'pop', 'smtp',
+  'ssl', 'staging', 'static', 'support', 'test', 'www', 'webmail',
+  'sacerdote', 'priest', 'sistema', 'system', 'config', 'settings'
+];
+
 export type BookingFormData = z.infer<typeof bookingSchema>;
 export type SignUpFormData = z.infer<typeof signUpSchema>;
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type GameTypeFormData = z.infer<typeof gameTypeSchema>;
 export type ConfigFormData = z.infer<typeof configSchema>;
+export type SubdomainData = z.infer<typeof subdomainSchema>;

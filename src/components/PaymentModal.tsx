@@ -7,6 +7,7 @@ import { CheckCircle, Copy, Clock, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
+import QRCode from 'react-qr-code';
 
 interface PaymentModalProps {
   appointment: Appointment | null;
@@ -146,13 +147,36 @@ export const PaymentModal = ({ appointment, open, onClose, pixKey, pixLabel }: P
                 </p>
               </div>
 
+              {/* QR Code PIX */}
+              {transaction?.pix_copy_paste && (
+                <Card className="p-4 border-primary/20">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="text-xs text-muted-foreground">Escaneie o QR Code</div>
+                    <div className="bg-white p-3 rounded-lg">
+                      <QRCode
+                        value={transaction.pix_copy_paste}
+                        size={180}
+                        level="M"
+                        bgColor="#FFFFFF"
+                        fgColor="#000000"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Aponte a câmera do app do seu banco para o QR Code
+                    </p>
+                  </div>
+                </Card>
+              )}
+
               {/* Chave PIX */}
               <Card className="p-4 space-y-3 border-primary/20">
                 <div>
-                  <div className="text-xs text-muted-foreground mb-2">Chave PIX</div>
+                  <div className="text-xs text-muted-foreground mb-2">
+                    {transaction?.pix_copy_paste ? 'Código Copia e Cola' : 'Chave PIX'}
+                  </div>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono break-all">
-                      {pixKey}
+                    <code className="flex-1 bg-muted px-3 py-2 rounded text-xs font-mono break-all max-h-20 overflow-y-auto">
+                      {transaction?.pix_copy_paste || pixKey}
                     </code>
                     <Button size="sm" variant="outline" onClick={copyPixKey}>
                       <Copy className="h-4 w-4" />
