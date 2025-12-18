@@ -38,6 +38,7 @@ export interface FinancialStats {
 export const useFinancialData = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState<FinancialStats | null>(null);
+  const [allTransactions, setAllTransactions] = useState<PaymentTransaction[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadFinancialData = async () => {
@@ -100,6 +101,9 @@ export const useFinancialData = () => {
         appointment: t.appointments as any,
       })) || [];
 
+      // Store all transactions for pagination
+      setAllTransactions(transformedTransactions);
+
       setStats({
         totalRevenue: paidAmount,
         pendingAmount,
@@ -108,7 +112,7 @@ export const useFinancialData = () => {
         pendingTransactions: pending.length,
         paidTransactions: paid.length,
         monthlyRevenue,
-        recentTransactions: transformedTransactions.slice(0, 10),
+        recentTransactions: transformedTransactions.slice(0, 5),
       });
 
     } catch (error: any) {
@@ -174,6 +178,7 @@ export const useFinancialData = () => {
 
   return {
     stats,
+    allTransactions,
     loading,
     refreshData: loadFinancialData,
     updateTransactionStatus,

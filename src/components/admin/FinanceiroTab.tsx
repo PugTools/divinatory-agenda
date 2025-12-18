@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { useFinancialData } from '@/hooks/useFinancialData';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/ui/pagination-controls';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -40,7 +42,17 @@ interface FinanceiroTabProps {
 }
 
 export const FinanceiroTab = ({ config, onUpdateConfig }: FinanceiroTabProps) => {
-  const { stats, loading, updateTransactionStatus } = useFinancialData();
+  const { stats, loading, updateTransactionStatus, allTransactions } = useFinancialData();
+
+  const {
+    data: paginatedTransactions,
+    pagination,
+    totalPages,
+    hasNextPage,
+    hasPrevPage,
+    goToPage,
+    setPageSize,
+  } = usePagination(allTransactions, 10);
 
   if (loading) {
     return (
@@ -165,11 +177,11 @@ export const FinanceiroTab = ({ config, onUpdateConfig }: FinanceiroTabProps) =>
         </Card>
       )}
 
-      {/* Recent Transactions */}
+      {/* Transactions Table with Pagination */}
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">Transações Recentes</h3>
-          <Badge variant="outline">{stats?.recentTransactions.length || 0} transações</Badge>
+          <h3 className="text-lg font-semibold">Transações</h3>
+          <Badge variant="outline">{allTransactions.length} total</Badge>
         </div>
 
         <div className="overflow-x-auto">
@@ -185,14 +197,14 @@ export const FinanceiroTab = ({ config, onUpdateConfig }: FinanceiroTabProps) =>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {stats?.recentTransactions.length === 0 ? (
+              {paginatedTransactions.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                     Nenhuma transação encontrada
                   </TableCell>
                 </TableRow>
               ) : (
-                stats?.recentTransactions.map((transaction) => (
+                paginatedTransactions.map((transaction) => (
                   <TableRow key={transaction.id}>
                     <TableCell>
                       <div className="flex flex-col">
@@ -266,6 +278,17 @@ export const FinanceiroTab = ({ config, onUpdateConfig }: FinanceiroTabProps) =>
             </TableBody>
           </Table>
         </div>
+
+        <PaginationControls
+          currentPage={pagination.page}
+          totalPages={totalPages}
+          totalCount={pagination.totalCount}
+          pageSize={pagination.pageSize}
+          hasNextPage={hasNextPage}
+          hasPrevPage={hasPrevPage}
+          onPageChange={goToPage}
+          onPageSizeChange={setPageSize}
+        />
       </Card>
     </div>
   );
