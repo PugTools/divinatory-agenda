@@ -15,6 +15,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/ui/pagination-controls';
 
 interface AppointmentsTabProps {
   agendamentos: Appointment[];
@@ -27,6 +29,16 @@ export const AppointmentsTab = ({ agendamentos, onOpenAppointment, onRemoveAppoi
     open: false,
     appointment: null,
   });
+
+  const {
+    data: paginatedAppointments,
+    pagination,
+    totalPages,
+    hasNextPage,
+    hasPrevPage,
+    goToPage,
+    setPageSize,
+  } = usePagination(agendamentos, 10);
 
   const handleDeleteConfirm = () => {
     if (deleteDialog.appointment) {
@@ -46,7 +58,10 @@ export const AppointmentsTab = ({ agendamentos, onOpenAppointment, onRemoveAppoi
   return (
     <>
       <Card className="p-6">
-        <h3 className="text-xl font-semibold mb-4">Agendamentos</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-semibold">Agendamentos</h3>
+          <Badge variant="outline">{agendamentos.length} total</Badge>
+        </div>
         
         <div className="overflow-x-auto">
           <Table>
@@ -62,7 +77,7 @@ export const AppointmentsTab = ({ agendamentos, onOpenAppointment, onRemoveAppoi
               </TableRow>
             </TableHeader>
             <TableBody>
-              {agendamentos.map(appointment => (
+              {paginatedAppointments.map(appointment => (
                 <TableRow key={appointment.id}>
                   <TableCell className="font-medium">{appointment.name}</TableCell>
                   <TableCell>{appointment.whatsapp}</TableCell>
@@ -101,6 +116,17 @@ export const AppointmentsTab = ({ agendamentos, onOpenAppointment, onRemoveAppoi
             </TableBody>
           </Table>
         </div>
+
+        <PaginationControls
+          currentPage={pagination.page}
+          totalPages={totalPages}
+          totalCount={pagination.totalCount}
+          pageSize={pagination.pageSize}
+          hasNextPage={hasNextPage}
+          hasPrevPage={hasPrevPage}
+          onPageChange={goToPage}
+          onPageSizeChange={setPageSize}
+        />
       </Card>
 
       {/* Delete Confirmation Dialog */}
