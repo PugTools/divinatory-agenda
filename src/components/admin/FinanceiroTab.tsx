@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import { Config } from '@/types/divination';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useFinancialData } from '@/hooks/useFinancialData';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/ui/pagination-controls';
+import { SearchFilter } from '@/components/ui/search-filter';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -41,8 +43,30 @@ interface FinanceiroTabProps {
   onUpdateConfig: (config: Config) => void;
 }
 
+const STATUS_OPTIONS = [
+  { value: 'paid', label: 'Pago' },
+  { value: 'pending', label: 'Pendente' },
+  { value: 'cancelled', label: 'Cancelado' },
+];
+
 export const FinanceiroTab = ({ config, onUpdateConfig }: FinanceiroTabProps) => {
   const { stats, loading, updateTransactionStatus, allTransactions } = useFinancialData();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  // Filter transactions based on search and status
+  const filteredTransactions = useMemo(() => {
+    return allTransactions.filter((tx) => {
+      const matchesSearch = searchQuery === '' || 
+        tx.appointment?.client_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        tx.appointment?.client_whatsapp?.includes(searchQuery) ||
+        tx.appointment?.game_type_name?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'all' || tx.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    });
+  }, [allTransactions, searchQuery, statusFilter]);
 
   const {
     data: paginatedTransactions,
@@ -52,7 +76,7 @@ export const FinanceiroTab = ({ config, onUpdateConfig }: FinanceiroTabProps) =>
     hasPrevPage,
     goToPage,
     setPageSize,
-  } = usePagination(allTransactions, 10);
+  } = usePagination(filteredTransactions, 10);
 
   if (loading) {
     return (
@@ -181,8 +205,23 @@ export const FinanceiroTab = ({ config, onUpdateConfig }: FinanceiroTabProps) =>
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Transações</h3>
-          <Badge variant="outline">{allTransactions.length} total</Badge>
+          <div className="flex items-center gap-2">
+            {filteredTransactions.length !== allTransactions.length && (
+              <Badge variant="secondary">{filteredTransactions.length} encontradas</Badge>
+            )}
+            <Badge variant="outline">{allTransactions.length} total</Badge>
+          </div>
         </div>
+
+        <SearchFilter
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Buscar por cliente, WhatsApp ou tipo de jogo..."
+          statusValue={statusFilter}
+          onStatusChange={setStatusFilter}
+          statusOptions={STATUS_OPTIONS}
+          statusPlaceholder="Status"
+        />
 
         <div className="overflow-x-auto">
           <Table>
