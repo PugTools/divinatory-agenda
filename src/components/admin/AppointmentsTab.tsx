@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Appointment } from '@/types/divination';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/ui/pagination-controls';
+import { SearchFilter } from '@/components/ui/search-filter';
 
 interface AppointmentsTabProps {
   agendamentos: Appointment[];
@@ -24,11 +25,33 @@ interface AppointmentsTabProps {
   onRemoveAppointment: (id: string | number) => void;
 }
 
+const STATUS_OPTIONS = [
+  { value: 'pending', label: 'Pendente' },
+  { value: 'Confirmado', label: 'Confirmado' },
+  { value: 'cancelled', label: 'Cancelado' },
+];
+
 export const AppointmentsTab = ({ agendamentos, onOpenAppointment, onRemoveAppointment }: AppointmentsTabProps) => {
   const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; appointment: Appointment | null }>({
     open: false,
     appointment: null,
   });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+
+  // Filter appointments based on search and status
+  const filteredAppointments = useMemo(() => {
+    return agendamentos.filter((apt) => {
+      const matchesSearch = searchQuery === '' || 
+        apt.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        apt.whatsapp.includes(searchQuery) ||
+        apt.tipo.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'all' || apt.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    });
+  }, [agendamentos, searchQuery, statusFilter]);
 
   const {
     data: paginatedAppointments,
@@ -38,7 +61,7 @@ export const AppointmentsTab = ({ agendamentos, onOpenAppointment, onRemoveAppoi
     hasPrevPage,
     goToPage,
     setPageSize,
-  } = usePagination(agendamentos, 10);
+  } = usePagination(filteredAppointments, 10);
 
   const handleDeleteConfirm = () => {
     if (deleteDialog.appointment) {
@@ -60,8 +83,23 @@ export const AppointmentsTab = ({ agendamentos, onOpenAppointment, onRemoveAppoi
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xl font-semibold">Agendamentos</h3>
-          <Badge variant="outline">{agendamentos.length} total</Badge>
+          <div className="flex items-center gap-2">
+            {filteredAppointments.length !== agendamentos.length && (
+              <Badge variant="secondary">{filteredAppointments.length} encontrados</Badge>
+            )}
+            <Badge variant="outline">{agendamentos.length} total</Badge>
+          </div>
         </div>
+
+        <SearchFilter
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Buscar por nome, WhatsApp ou tipo de jogo..."
+          statusValue={statusFilter}
+          onStatusChange={setStatusFilter}
+          statusOptions={STATUS_OPTIONS}
+          statusPlaceholder="Status"
+        />
         
         <div className="overflow-x-auto">
           <Table>
@@ -77,7 +115,13 @@ export const AppointmentsTab = ({ agendamentos, onOpenAppointment, onRemoveAppoi
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedAppointments.map(appointment => (
+              {paginatedAppointments.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    Nenhum agendamento encontrado com os filtros aplicados
+                  </TableCell>
+                </TableRow>
+              ) : paginatedAppointments.map(appointment => (
                 <TableRow key={appointment.id}>
                   <TableCell className="font-medium">{appointment.name}</TableCell>
                   <TableCell>{appointment.whatsapp}</TableCell>
