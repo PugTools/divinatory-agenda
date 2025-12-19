@@ -27,7 +27,11 @@ const Admin = () => {
     removeAppointment,
     updateValores,
     updateConfig,
-    updateProfile
+    updateProfile,
+    gameTypes,
+    addGameType,
+    removeGameType,
+    refreshData
   } = useAppData();
 
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
@@ -136,7 +140,13 @@ const Admin = () => {
             </TabsContent>
 
             <TabsContent value="valores" className="mt-6">
-              <ValoresTab valores={valores} onUpdateValores={updateValores} />
+              <ValoresTab 
+                gameTypes={gameTypes} 
+                onUpdateValores={updateValores}
+                onAddGameType={addGameType}
+                onRemoveGameType={removeGameType}
+                onRefresh={refreshData}
+              />
             </TabsContent>
 
             <TabsContent value="config" className="mt-6">
