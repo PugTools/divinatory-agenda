@@ -24,19 +24,38 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { gameTypeSchema } from '@/schemas/validation';
+import { supabase } from '@/integrations/supabase/client';
 
-interface ValoresTabProps {
-  valores: Record<string, number>;
-  onUpdateValores: (valores: Record<string, number>) => void;
+interface GameType {
+  id: string;
+  name: string;
+  value: number;
+  description?: string;
+  active: boolean;
+  sort_order: number;
 }
 
-export const ValoresTab = ({ valores, onUpdateValores }: ValoresTabProps) => {
-  const [newTipo, setNewTipo] = useState({ name: '', value: 0 });
-  const [editingValores, setEditingValores] = useState(valores);
-  const [deleteDialog, setDeleteDialog] = useState({ open: false, name: '' });
-  const [renameDialog, setRenameDialog] = useState({ open: false, oldName: '', newName: '' });
+interface ValoresTabProps {
+  gameTypes: GameType[];
+  onUpdateValores: (valores: Record<string, number>) => Promise<void>;
+  onAddGameType: (name: string, value: number) => Promise<void>;
+  onRemoveGameType: (id: string) => Promise<void>;
+  onRefresh: () => Promise<void>;
+}
 
-  const handleAdd = () => {
+export const ValoresTab = ({ 
+  gameTypes, 
+  onUpdateValores, 
+  onAddGameType, 
+  onRemoveGameType,
+  onRefresh
+}: ValoresTabProps) => {
+  const [newTipo, setNewTipo] = useState({ name: '', value: 0 });
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: '', name: '' });
+  const [renameDialog, setRenameDialog] = useState({ open: false, id: '', oldName: '', newName: '' });
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleAdd = async () => {
     // Validate with Zod
     const validation = gameTypeSchema.safeParse({ name: newTipo.name, value: newTipo.value });
     
@@ -46,34 +65,42 @@ export const ValoresTab = ({ valores, onUpdateValores }: ValoresTabProps) => {
       return;
     }
 
-    if (editingValores[newTipo.name]) {
+    // Check if type already exists
+    if (gameTypes.some(gt => gt.name.toLowerCase() === newTipo.name.toLowerCase())) {
       toast.error('Tipo já existe.');
       return;
     }
 
-    const updated = { ...editingValores, [newTipo.name]: newTipo.value };
-    setEditingValores(updated);
-    onUpdateValores(updated);
-    setNewTipo({ name: '', value: 0 });
-    toast.success('Tipo adicionado com sucesso!');
+    setIsLoading(true);
+    try {
+      await onAddGameType(newTipo.name, newTipo.value);
+      setNewTipo({ name: '', value: 0 });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleRemoveConfirm = () => {
-    const updated = { ...editingValores };
-    delete updated[deleteDialog.name];
-    setEditingValores(updated);
-    onUpdateValores(updated);
-    setDeleteDialog({ open: false, name: '' });
-    toast.success('Tipo removido com sucesso!');
+  const handleRemoveConfirm = async () => {
+    setIsLoading(true);
+    try {
+      await onRemoveGameType(deleteDialog.id);
+      setDeleteDialog({ open: false, id: '', name: '' });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleValueChange = (nome: string, value: number) => {
-    const updated = { ...editingValores, [nome]: value };
-    setEditingValores(updated);
-    onUpdateValores(updated);
+  const handleValueChange = async (id: string, name: string, value: number) => {
+    // Update using the valores format for backward compatibility
+    const updatedValores = gameTypes.reduce((acc, gt) => {
+      acc[gt.name] = gt.id === id ? value : gt.value;
+      return acc;
+    }, {} as Record<string, number>);
+    
+    await onUpdateValores(updatedValores);
   };
 
-  const handleRenameConfirm = () => {
+  const handleRenameConfirm = async () => {
     // Validate new name
     const validation = gameTypeSchema.pick({ name: true }).safeParse({ name: renameDialog.newName });
     
@@ -83,23 +110,33 @@ export const ValoresTab = ({ valores, onUpdateValores }: ValoresTabProps) => {
     }
 
     if (renameDialog.newName === renameDialog.oldName) {
-      setRenameDialog({ open: false, oldName: '', newName: '' });
+      setRenameDialog({ open: false, id: '', oldName: '', newName: '' });
       return;
     }
 
-    if (editingValores[renameDialog.newName]) {
+    // Check if name already exists
+    if (gameTypes.some(gt => gt.name.toLowerCase() === renameDialog.newName.toLowerCase() && gt.id !== renameDialog.id)) {
       toast.error('Já existe um tipo com esse nome.');
       return;
     }
 
-    const updated = { ...editingValores };
-    const value = updated[renameDialog.oldName];
-    delete updated[renameDialog.oldName];
-    updated[renameDialog.newName] = value;
-    setEditingValores(updated);
-    onUpdateValores(updated);
-    setRenameDialog({ open: false, oldName: '', newName: '' });
-    toast.success('Tipo renomeado com sucesso!');
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('game_types')
+        .update({ name: renameDialog.newName })
+        .eq('id', renameDialog.id);
+
+      if (error) throw error;
+
+      toast.success('Tipo renomeado com sucesso!');
+      setRenameDialog({ open: false, id: '', oldName: '', newName: '' });
+      await onRefresh();
+    } catch (error: any) {
+      toast.error('Erro ao renomear tipo de jogo');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -108,28 +145,33 @@ export const ValoresTab = ({ valores, onUpdateValores }: ValoresTabProps) => {
         <h3 className="text-xl font-semibold mb-6">Tipos de Jogo e Valores</h3>
 
         <div className="space-y-4 mb-6">
-          {Object.entries(editingValores).map(([nome, valor]) => (
-            <div key={nome} className="flex items-center gap-3">
-              <div className="flex-1 font-medium">{nome}</div>
+          {gameTypes.map((gameType) => (
+            <div key={gameType.id} className="flex items-center gap-3">
+              <div className="flex-1 font-medium">{gameType.name}</div>
               <div className="w-32">
                 <Input
                   type="number"
-                  value={valor}
-                  onChange={(e) => handleValueChange(nome, Number(e.target.value))}
+                  value={gameType.value}
+                  onChange={(e) => handleValueChange(gameType.id, gameType.name, Number(e.target.value))}
                   className="text-right"
                 />
               </div>
               <Button 
                 size="sm" 
                 variant="outline" 
-                onClick={() => setRenameDialog({ open: true, oldName: nome, newName: nome })}
+                onClick={() => setRenameDialog({ 
+                  open: true, 
+                  id: gameType.id, 
+                  oldName: gameType.name, 
+                  newName: gameType.name 
+                })}
               >
                 <Edit2 className="h-4 w-4" />
               </Button>
               <Button 
                 size="sm" 
                 variant="destructive" 
-                onClick={() => setDeleteDialog({ open: true, name: nome })}
+                onClick={() => setDeleteDialog({ open: true, id: gameType.id, name: gameType.name })}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -160,7 +202,11 @@ export const ValoresTab = ({ valores, onUpdateValores }: ValoresTabProps) => {
               />
             </div>
             <div className="flex items-end">
-              <Button onClick={handleAdd} className="w-full bg-gradient-primary">
+              <Button 
+                onClick={handleAdd} 
+                className="w-full bg-gradient-primary"
+                disabled={isLoading}
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 Adicionar Tipo
               </Button>
@@ -180,7 +226,7 @@ export const ValoresTab = ({ valores, onUpdateValores }: ValoresTabProps) => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRemoveConfirm}>Remover</AlertDialogAction>
+            <AlertDialogAction onClick={handleRemoveConfirm} disabled={isLoading}>Remover</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -211,10 +257,10 @@ export const ValoresTab = ({ valores, onUpdateValores }: ValoresTabProps) => {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRenameDialog({ open: false, oldName: '', newName: '' })}>
+            <Button variant="outline" onClick={() => setRenameDialog({ open: false, id: '', oldName: '', newName: '' })}>
               Cancelar
             </Button>
-            <Button onClick={handleRenameConfirm}>Salvar</Button>
+            <Button onClick={handleRenameConfirm} disabled={isLoading}>Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
