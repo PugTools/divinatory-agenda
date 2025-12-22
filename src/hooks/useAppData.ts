@@ -86,19 +86,28 @@ export const useAppData = () => {
 
       if (error) throw error;
 
-      // Transform to old format
+      // Map database fields directly to Appointment type
       const transformed: Appointment[] = (data || []).map((apt: any) => ({
         id: apt.id,
-        name: apt.client_name,
-        whatsapp: apt.client_whatsapp,
-        birthdate: apt.client_birthdate,
-        tipo: apt.game_type_name || '',
+        priest_id: apt.priest_id,
+        client_name: apt.client_name,
+        client_whatsapp: apt.client_whatsapp,
+        client_email: apt.client_email,
+        client_birthdate: apt.client_birthdate,
+        game_type_id: apt.game_type_id,
+        game_type_name: apt.game_type_name,
+        scheduled_date: apt.scheduled_date,
+        scheduled_time: apt.scheduled_time,
         valor: Number(apt.valor),
-        dataEscolhida: apt.scheduled_date,
-        hora: apt.scheduled_time,
         cruz: apt.cruz,
         status: apt.status,
-        createdAt: apt.created_at
+        payment_status: apt.payment_status,
+        payment_id: apt.payment_id,
+        notes: apt.notes,
+        confirmation_sent: apt.confirmation_sent,
+        reminder_sent: apt.reminder_sent,
+        created_at: apt.created_at,
+        updated_at: apt.updated_at,
       }));
 
       setAppointments(transformed);
@@ -159,12 +168,14 @@ export const useAppData = () => {
     try {
       const insertData: any = {
         priest_id: user.id,
-        client_name: appointment.name,
-        client_whatsapp: appointment.whatsapp,
-        client_birthdate: appointment.birthdate,
-        game_type_name: appointment.tipo,
-        scheduled_date: appointment.dataEscolhida,
-        scheduled_time: appointment.hora,
+        client_name: appointment.client_name,
+        client_whatsapp: appointment.client_whatsapp,
+        client_email: appointment.client_email,
+        client_birthdate: appointment.client_birthdate,
+        game_type_id: appointment.game_type_id,
+        game_type_name: appointment.game_type_name,
+        scheduled_date: appointment.scheduled_date,
+        scheduled_time: appointment.scheduled_time,
         valor: appointment.valor,
         cruz: appointment.cruz,
         status: appointment.status || 'pending'
@@ -192,12 +203,14 @@ export const useAppData = () => {
     try {
       const dbUpdates: any = {};
       
-      if (updates.name) dbUpdates.client_name = updates.name;
-      if (updates.whatsapp) dbUpdates.client_whatsapp = updates.whatsapp;
-      if (updates.birthdate) dbUpdates.client_birthdate = updates.birthdate;
+      if (updates.client_name) dbUpdates.client_name = updates.client_name;
+      if (updates.client_whatsapp) dbUpdates.client_whatsapp = updates.client_whatsapp;
+      if (updates.client_birthdate) dbUpdates.client_birthdate = updates.client_birthdate;
+      if (updates.client_email) dbUpdates.client_email = updates.client_email;
       if (updates.status) dbUpdates.status = updates.status;
       if (updates.valor !== undefined) dbUpdates.valor = updates.valor;
       if (updates.cruz) dbUpdates.cruz = updates.cruz;
+      if (updates.notes) dbUpdates.notes = updates.notes;
 
       const { error } = await supabase
         .from('appointments')

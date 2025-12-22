@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { User, Globe, Save, AlertCircle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { subdomainSchema } from '@/schemas/validation';
+import { getHostnameInfo, getPersonalizedLink } from '@/utils/hostname';
 
 interface ProfileTabProps {
   profile: PriestProfile | null;
@@ -80,11 +81,10 @@ export const ProfileTab = ({ profile, onUpdateProfile }: ProfileTabProps) => {
     }
   };
 
-  const hostname = window.location.hostname;
-  const isPreview = hostname.includes('lovableproject.com');
-  const isPublished = hostname.includes('lovable.app');
+  // Use centralized hostname utility
+  const { isPreview } = getHostnameInfo();
   const personalizedLink = subdomain 
-    ? `${window.location.origin}/?priest=${subdomain}`
+    ? getPersonalizedLink(subdomain)
     : 'Configure seu identificador para gerar o link';
 
   return (
