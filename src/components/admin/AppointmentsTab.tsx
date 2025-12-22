@@ -43,9 +43,9 @@ export const AppointmentsTab = ({ agendamentos, onOpenAppointment, onRemoveAppoi
   const filteredAppointments = useMemo(() => {
     return agendamentos.filter((apt) => {
       const matchesSearch = searchQuery === '' || 
-        apt.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        apt.whatsapp.includes(searchQuery) ||
-        apt.tipo.toLowerCase().includes(searchQuery.toLowerCase());
+        apt.client_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        apt.client_whatsapp.includes(searchQuery) ||
+        (apt.game_type_name || '').toLowerCase().includes(searchQuery.toLowerCase());
       
       const matchesStatus = statusFilter === 'all' || apt.status === statusFilter;
       
@@ -123,16 +123,16 @@ export const AppointmentsTab = ({ agendamentos, onOpenAppointment, onRemoveAppoi
                 </TableRow>
               ) : paginatedAppointments.map(appointment => (
                 <TableRow key={appointment.id}>
-                  <TableCell className="font-medium">{appointment.name}</TableCell>
-                  <TableCell>{appointment.whatsapp}</TableCell>
-                  <TableCell className="text-sm">{appointment.tipo}</TableCell>
+                  <TableCell className="font-medium">{appointment.client_name}</TableCell>
+                  <TableCell>{appointment.client_whatsapp}</TableCell>
+                  <TableCell className="text-sm">{appointment.game_type_name}</TableCell>
                   <TableCell>
                     {(() => {
-                      const [year, month, day] = appointment.dataEscolhida.split('-');
+                      const [year, month, day] = appointment.scheduled_date.split('-');
                       return `${day}/${month}/${year}`;
                     })()}
                   </TableCell>
-                  <TableCell>{appointment.hora}</TableCell>
+                  <TableCell>{appointment.scheduled_time}</TableCell>
                   <TableCell>
                     <Badge variant={appointment.status === 'Confirmado' ? 'default' : 'secondary'}>
                       {appointment.status}
@@ -180,7 +180,7 @@ export const AppointmentsTab = ({ agendamentos, onOpenAppointment, onRemoveAppoi
             <AlertDialogTitle>Confirmar remoção</AlertDialogTitle>
             <AlertDialogDescription>
               Tem certeza que deseja remover o agendamento de{' '}
-              <span className="font-semibold">{deleteDialog.appointment?.name}</span>?
+              <span className="font-semibold">{deleteDialog.appointment?.client_name}</span>?
               Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>

@@ -37,21 +37,21 @@ export const AppointmentModal = ({ appointment, open, onClose, onGeneratePDF, on
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="p-4 space-y-2">
               <div className="text-sm text-muted-foreground">Cliente</div>
-              <div className="font-semibold text-lg">{appointment.name}</div>
-              <div className="text-sm text-muted-foreground">{appointment.whatsapp}</div>
-              <div className="text-sm text-muted-foreground">Nasc: {appointment.birthdate}</div>
+              <div className="font-semibold text-lg">{appointment.client_name}</div>
+              <div className="text-sm text-muted-foreground">{appointment.client_whatsapp}</div>
+              <div className="text-sm text-muted-foreground">Nasc: {appointment.client_birthdate}</div>
             </Card>
 
             <Card className="p-4 space-y-2">
               <div className="text-sm text-muted-foreground">Agendamento</div>
               <div className="font-semibold">
                 {(() => {
-                  const [year, month, day] = appointment.dataEscolhida.split('-');
+                  const [year, month, day] = appointment.scheduled_date.split('-');
                   return `${day}/${month}/${year}`;
-                })()} — {appointment.hora}
+                })()} — {appointment.scheduled_time}
               </div>
               <div className="text-sm text-muted-foreground">
-                Jogo: {appointment.tipo} — R$ {appointment.valor}
+                Jogo: {appointment.game_type_name} — R$ {appointment.valor}
               </div>
               <div className="mt-2">
                 <Badge variant={appointment.status === 'Confirmado' ? 'default' : 'secondary'}>

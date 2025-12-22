@@ -51,14 +51,14 @@ export const generatePDF = (appointment: Appointment, pixInfo: { pix: string; pi
   y += 2;
 
   // Client info
-  drawText(`Cliente: ${appointment.name}`, 12, { isBold: true });
-  drawText(`WhatsApp: ${appointment.whatsapp}`, 11);
-  drawText(`Nasc.: ${appointment.birthdate}`, 11);
-  drawText(`Jogo: ${appointment.tipo} — R$ ${appointment.valor}`, 11);
+  drawText(`Cliente: ${appointment.client_name}`, 12, { isBold: true });
+  drawText(`WhatsApp: ${appointment.client_whatsapp}`, 11);
+  drawText(`Nasc.: ${appointment.client_birthdate}`, 11);
+  drawText(`Jogo: ${appointment.game_type_name} — R$ ${appointment.valor}`, 11);
   drawText(`Data/Hora: ${(() => {
-    const [year, month, day] = appointment.dataEscolhida.split('-');
+    const [year, month, day] = appointment.scheduled_date.split('-');
     return `${day}/${month}/${year}`;
-  })()} — ${appointment.hora}`, 11);
+  })()} — ${appointment.scheduled_time}`, 11);
 
   y += 6;
   drawText('--- Cruz dos 5 Odùs ---', 12, { isBold: true });
@@ -125,6 +125,6 @@ export const generatePDF = (appointment: Appointment, pixInfo: { pix: string; pi
   drawText(`Chave PIX: ${pixInfo.pix} (${pixInfo.pixLabel || ''})`, 10);
 
   // Save
-  const filenameSafe = (appointment.name || 'agendamento').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-\.]/g, '');
+  const filenameSafe = (appointment.client_name || 'agendamento').replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-\.]/g, '');
   doc.save(`Cruz_Odu_${filenameSafe}.pdf`);
 };

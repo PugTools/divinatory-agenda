@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-
+import { isDevelopmentEnvironment, getHostnameInfo } from '@/utils/hostname';
 interface PriestProfile {
   id: string;
   display_name: string | null;
@@ -47,7 +47,8 @@ export const usePriestContext = () => {
     setLoading(true);
 
     try {
-      const hostname = window.location.hostname;
+      const { hostname, isProduction, subdomain: detectedSubdomain } = getHostnameInfo();
+      const isDev = isDevelopmentEnvironment();
       
       // Check for priest parameter in URL
       const urlParams = new URLSearchParams(window.location.search);
@@ -75,12 +76,7 @@ export const usePriestContext = () => {
           .maybeSingle();
 
         if (!error) profileData = data;
-      } else if (
-        hostname.includes('localhost') || 
-        hostname.includes('127.0.0.1') ||
-        hostname.includes('lovableproject.com') ||
-        hostname.includes('lovable.app')
-      ) {
+      } else if (isDev) {
         // Development/Lovable mode - check if there are multiple priests
         if (allPriestsData && allPriestsData.length > 1) {
           // Multiple priests available - show selection
@@ -92,8 +88,18 @@ export const usePriestContext = () => {
           profileData = allPriestsData[0];
         }
       } else {
+        // Development/Lovable mode - check if there are multiple priests
+        if (allPriestsData && allPriestsData.length > 1) {
+          // Multiple priests available - show selection
+          setShowPriestSelection(true);
+          setLoading(false);
+          return;
+        } else if (allPriestsData && allPriestsData.length === 1) {
+          // Only one priest - use it directly
+          profileData = allPriestsData[0];
+        }
         // Production mode - detect from subdomain or custom domain
-        const subdomain = hostname.split('.')[0];
+        const subdomain = detectedSubdomain || hostname.split('.')[0];
         
         const { data, error } = await supabase
           .from('profiles')

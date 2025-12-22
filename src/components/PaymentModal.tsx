@@ -85,8 +85,8 @@ export const PaymentModal = ({ appointment, open, onClose, pixKey, pixLabel }: P
           <Card className="p-4 space-y-3 bg-gradient-mystical border-primary/20">
             <div className="flex justify-between items-start">
               <div className="flex-1">
-                <div className="text-xs text-muted-foreground">Cliente</div>
-                <div className="font-semibold">{appointment.name}</div>
+              <div className="text-xs text-muted-foreground">Cliente</div>
+                <div className="font-semibold">{appointment.client_name}</div>
               </div>
               {transaction && (
                 <Badge 
@@ -111,18 +111,18 @@ export const PaymentModal = ({ appointment, open, onClose, pixKey, pixLabel }: P
             <div>
               <div className="text-xs text-muted-foreground">Data e Horário</div>
               <div className="font-semibold">
-                {new Date(appointment.dataEscolhida).toLocaleDateString('pt-BR', {
+                {new Date(appointment.scheduled_date).toLocaleDateString('pt-BR', {
                   weekday: 'long',
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric'
-                })} às {appointment.hora}
+                })} às {appointment.scheduled_time}
               </div>
             </div>
 
             <div>
               <div className="text-xs text-muted-foreground">Tipo de Consulta</div>
-              <div className="font-semibold">{appointment.tipo}</div>
+              <div className="font-semibold">{appointment.game_type_name}</div>
             </div>
 
             <div className="pt-3 border-t border-primary/20">

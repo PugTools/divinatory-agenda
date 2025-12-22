@@ -8,6 +8,7 @@ import { Calendar, TrendingUp, Package, Share2, Copy, ExternalLink, CheckCircle,
 import { toast } from 'sonner';
 import { useState } from 'react';
 import QRCodeSVG from 'react-qr-code';
+import { getHostnameInfo } from '@/utils/hostname';
 
 interface DashboardProps {
   agendamentos: Appointment[];
@@ -22,7 +23,7 @@ export const Dashboard = ({ agendamentos, valores, subdomain }: DashboardProps) 
   const [showQRCode, setShowQRCode] = useState(false);
   
   const futureCount = agendamentos.filter(a => {
-    const date = new Date(a.dataEscolhida);
+    const date = new Date(a.scheduled_date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return date >= today;
@@ -31,7 +32,7 @@ export const Dashboard = ({ agendamentos, valores, subdomain }: DashboardProps) 
   // Calculate appointments per day of week
   const dayCounts = [0, 0, 0, 0, 0, 0, 0];
   agendamentos.forEach(a => {
-    const d = new Date(a.dataEscolhida);
+    const d = new Date(a.scheduled_date);
     dayCounts[d.getDay()]++;
   });
 
@@ -40,10 +41,8 @@ export const Dashboard = ({ agendamentos, valores, subdomain }: DashboardProps) 
     agendamentos: dayCounts[idx]
   }));
 
-  // Get current site URL
-  const hostname = window.location.hostname;
-  const isPreview = hostname.includes('lovableproject.com');
-  const isPublished = hostname.includes('lovable.app');
+  // Get current site URL using centralized hostname utility
+  const { isPreview, isPublished } = getHostnameInfo();
   
   // Generate the correct URL based on subdomain
   const baseUrl = isPreview 
