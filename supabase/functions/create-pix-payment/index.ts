@@ -13,12 +13,57 @@ interface CreatePixPaymentRequest {
   pixLabel: string;
 }
 
+// Rate limit configuration
+const RATE_LIMIT_MAX_REQUESTS = 10;
+const RATE_LIMIT_WINDOW_SECONDS = 60;
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Create service role client for rate limiting
+  const serviceClient = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+  );
+
   try {
+    // Get client IP for rate limiting
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
+                     req.headers.get("x-real-ip") || 
+                     "unknown";
+    const rateLimitKey = `create-pix-payment:${clientIp}`;
+
+    // Check rate limit
+    const { data: allowed, error: rateLimitError } = await serviceClient.rpc(
+      "check_rate_limit",
+      {
+        p_key: rateLimitKey,
+        p_max_requests: RATE_LIMIT_MAX_REQUESTS,
+        p_window_seconds: RATE_LIMIT_WINDOW_SECONDS,
+      }
+    );
+
+    if (rateLimitError) {
+      console.error("Rate limit check error:", rateLimitError);
+    }
+
+    if (allowed === false) {
+      console.warn(`Rate limit exceeded for ${rateLimitKey}`);
+      return new Response(
+        JSON.stringify({ error: "Too many requests. Please try again later." }),
+        {
+          status: 429,
+          headers: { 
+            "Content-Type": "application/json", 
+            "Retry-After": String(RATE_LIMIT_WINDOW_SECONDS),
+            ...corsHeaders 
+          },
+        }
+      );
+    }
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       throw new Error("Missing authorization header");
@@ -61,7 +106,6 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Generate PIX payment data (simulated)
-    // In production, you would integrate with a payment provider API (Mercado Pago, PagSeguro, etc.)
     const pixCopyPaste = generatePixCopyPaste(pixKey, pixLabel, amount, appointmentId);
     const pixQrCodeData = `data:image/svg+xml;base64,${btoa(generateQrCodeSvg(pixCopyPaste))}`;
 
@@ -130,8 +174,6 @@ function generatePixCopyPaste(
   amount: number,
   transactionId: string
 ): string {
-  // This is a simplified simulation
-  // Real PIX Copy & Paste follows EMV (Europay, Mastercard, Visa) standard
   const amountStr = amount.toFixed(2);
   const timestamp = Date.now();
   
@@ -140,8 +182,6 @@ function generatePixCopyPaste(
 
 // Generate simple QR Code SVG (simulation)
 function generateQrCodeSvg(data: string): string {
-  // In production, use a proper QR Code generator library
-  // This is just a placeholder SVG
   return `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
       <rect width="200" height="200" fill="white"/>
