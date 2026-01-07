@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { PriestProfile } from '@/types/divination';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,10 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { User, Globe, Save, AlertCircle, CheckCircle } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { User, Globe, Save, AlertCircle, CheckCircle, Camera, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { subdomainSchema } from '@/schemas/validation';
 import { getHostnameInfo, getPersonalizedLink } from '@/utils/hostname';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ProfileTabProps {
   profile: PriestProfile | null;
@@ -20,15 +22,82 @@ export const ProfileTab = ({ profile, onUpdateProfile }: ProfileTabProps) => {
   const [displayName, setDisplayName] = useState('');
   const [subdomain, setSubdomain] = useState('');
   const [bio, setBio] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.display_name || '');
       setSubdomain(profile.subdomain || '');
       setBio(profile.bio || '');
+      setAvatarUrl(profile.avatar_url || null);
     }
   }, [profile]);
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !profile?.id) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, selecione uma imagem válida');
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('A imagem deve ter no máximo 2MB');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${profile.id}/avatar.${fileExt}`;
+
+      // Delete old avatar if exists
+      if (avatarUrl) {
+        const oldPath = avatarUrl.split('/avatars/')[1];
+        if (oldPath) {
+          await supabase.storage.from('avatars').remove([oldPath]);
+        }
+      }
+
+      // Upload new avatar
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Update profile with new avatar URL
+      await onUpdateProfile({ avatar_url: publicUrl });
+      setAvatarUrl(publicUrl);
+      toast.success('Avatar atualizado com sucesso!');
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      toast.error('Erro ao fazer upload do avatar');
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const getInitials = () => {
+    if (displayName) {
+      return displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    return 'SA';
+  };
 
   const [subdomainError, setSubdomainError] = useState<string | null>(null);
 
@@ -91,14 +160,41 @@ export const ProfileTab = ({ profile, onUpdateProfile }: ProfileTabProps) => {
     <div className="space-y-6">
       {/* Profile Card */}
       <Card className="p-6 space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-            <User className="h-6 w-6 text-primary" />
+        <div className="flex items-center gap-4">
+          {/* Avatar Upload */}
+          <div className="relative group">
+            <Avatar className="h-16 w-16 border-2 border-primary/20">
+              <AvatarImage src={avatarUrl || undefined} alt={displayName} />
+              <AvatarFallback className="bg-primary/20 text-primary text-lg">
+                {getInitials()}
+              </AvatarFallback>
+            </Avatar>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            >
+              {uploadingAvatar ? (
+                <Loader2 className="h-5 w-5 text-white animate-spin" />
+              ) : (
+                <Camera className="h-5 w-5 text-white" />
+              )}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarUpload}
+              className="hidden"
+            />
           </div>
           <div>
             <h3 className="text-xl font-semibold">Perfil do Sacerdote</h3>
             <p className="text-sm text-muted-foreground">
               Configure suas informações públicas
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Clique na foto para alterar o avatar
             </p>
           </div>
         </div>
