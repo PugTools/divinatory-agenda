@@ -21,12 +21,57 @@ interface BookingConfirmationRequest {
   valor: number;
 }
 
+// Rate limit configuration
+const RATE_LIMIT_MAX_REQUESTS = 5;
+const RATE_LIMIT_WINDOW_SECONDS = 60;
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Create service role client for rate limiting
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+  );
+
   try {
+    // Get client IP for rate limiting
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
+                     req.headers.get("x-real-ip") || 
+                     "unknown";
+    const rateLimitKey = `send-booking-confirmation:${clientIp}`;
+
+    // Check rate limit
+    const { data: allowed, error: rateLimitError } = await supabase.rpc(
+      "check_rate_limit",
+      {
+        p_key: rateLimitKey,
+        p_max_requests: RATE_LIMIT_MAX_REQUESTS,
+        p_window_seconds: RATE_LIMIT_WINDOW_SECONDS,
+      }
+    );
+
+    if (rateLimitError) {
+      console.error("Rate limit check error:", rateLimitError);
+    }
+
+    if (allowed === false) {
+      console.warn(`Rate limit exceeded for ${rateLimitKey}`);
+      return new Response(
+        JSON.stringify({ error: "Too many requests. Please try again later." }),
+        {
+          status: 429,
+          headers: { 
+            "Content-Type": "application/json", 
+            "Retry-After": String(RATE_LIMIT_WINDOW_SECONDS),
+            ...corsHeaders 
+          },
+        }
+      );
+    }
+
     const {
       appointmentId,
       priestEmail,
@@ -158,11 +203,6 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Log notification
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-
     await supabase.from("notifications_log").insert({
       appointment_id: appointmentId,
       type: "booking_confirmation",

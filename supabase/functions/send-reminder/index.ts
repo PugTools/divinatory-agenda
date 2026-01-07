@@ -9,16 +9,55 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Rate limit configuration (more permissive for cron jobs)
+const RATE_LIMIT_MAX_REQUESTS = 100;
+const RATE_LIMIT_WINDOW_SECONDS = 3600; // 1 hour
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+  );
+
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    // Get client IP for rate limiting
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || 
+                     req.headers.get("x-real-ip") || 
+                     "unknown";
+    const rateLimitKey = `send-reminder:${clientIp}`;
+
+    // Check rate limit
+    const { data: allowed, error: rateLimitError } = await supabase.rpc(
+      "check_rate_limit",
+      {
+        p_key: rateLimitKey,
+        p_max_requests: RATE_LIMIT_MAX_REQUESTS,
+        p_window_seconds: RATE_LIMIT_WINDOW_SECONDS,
+      }
     );
+
+    if (rateLimitError) {
+      console.error("Rate limit check error:", rateLimitError);
+    }
+
+    if (allowed === false) {
+      console.warn(`Rate limit exceeded for ${rateLimitKey}`);
+      return new Response(
+        JSON.stringify({ error: "Too many requests. Please try again later." }),
+        {
+          status: 429,
+          headers: { 
+            "Content-Type": "application/json", 
+            "Retry-After": String(RATE_LIMIT_WINDOW_SECONDS),
+            ...corsHeaders 
+          },
+        }
+      );
+    }
 
     // Get appointments for tomorrow that haven't received reminder
     const tomorrow = new Date();
@@ -38,6 +77,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (fetchError) throw fetchError;
 
     if (!appointments || appointments.length === 0) {
+      console.log("No reminders to send for", tomorrowDate);
       return new Response(
         JSON.stringify({ message: "No reminders to send" }),
         {
@@ -46,6 +86,8 @@ const handler = async (req: Request): Promise<Response> => {
         }
       );
     }
+
+    console.log(`Processing ${appointments.length} reminders for ${tomorrowDate}`);
 
     let emailsSent = 0;
     let emailsFailed = 0;
@@ -127,6 +169,7 @@ const handler = async (req: Request): Promise<Response> => {
           }
 
           emailsSent++;
+          console.log(`Reminder sent to ${appointment.client_email}`);
         }
 
         // Update reminder_sent flag
@@ -146,6 +189,7 @@ const handler = async (req: Request): Promise<Response> => {
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         emailsFailed++;
+        console.error(`Failed to send reminder for appointment ${appointment.id}:`, errorMessage);
         
         await supabase.from("notifications_log").insert({
           appointment_id: appointment.id,
@@ -156,6 +200,8 @@ const handler = async (req: Request): Promise<Response> => {
         });
       }
     }
+
+    console.log(`Reminders processed: ${emailsSent} sent, ${emailsFailed} failed`);
 
     return new Response(
       JSON.stringify({ 
@@ -170,6 +216,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error("Error in send-reminder:", errorMessage);
     
     return new Response(
       JSON.stringify({ error: errorMessage }),
