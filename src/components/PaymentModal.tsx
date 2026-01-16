@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Copy, Clock, Loader2 } from 'lucide-react';
+import { CheckCircle, Copy, Clock, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
@@ -30,19 +30,22 @@ interface PaymentTransaction {
 export const PaymentModal = ({ appointment, open, onClose, pixKey, pixLabel }: PaymentModalProps) => {
   const [transaction, setTransaction] = useState<PaymentTransaction | null>(null);
   const [loading, setLoading] = useState(true);
+  const [generatingPix, setGeneratingPix] = useState(false);
 
   useEffect(() => {
     if (open && appointment) {
-      loadTransaction();
+      loadOrGeneratePix();
     }
   }, [open, appointment]);
 
-  const loadTransaction = async () => {
-    if (!appointment?.id) return;
+  const loadOrGeneratePix = async () => {
+    if (!appointment?.id || !appointment?.priest_id) return;
 
     try {
       setLoading(true);
       const appointmentId = String(appointment.id);
+      
+      // First try to load existing transaction
       const { data, error } = await supabase
         .from('payment_transactions')
         .select('*')
@@ -50,11 +53,54 @@ export const PaymentModal = ({ appointment, open, onClose, pixKey, pixLabel }: P
         .maybeSingle();
 
       if (error) throw error;
-      setTransaction(data);
+      
+      // If transaction exists but has no PIX code, generate one
+      if (data && !data.pix_copy_paste) {
+        await generatePix();
+      } else if (data) {
+        setTransaction(data);
+      } else {
+        // No transaction exists, generate PIX
+        await generatePix();
+      }
     } catch (error) {
       console.error('Error loading transaction:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const generatePix = async () => {
+    if (!appointment?.id || !appointment?.priest_id) return;
+
+    try {
+      setGeneratingPix(true);
+      
+      const response = await supabase.functions.invoke('generate-pix', {
+        body: {
+          appointmentId: appointment.id,
+          priestId: appointment.priest_id,
+        },
+      });
+
+      if (response.error) throw response.error;
+
+      // Reload transaction with updated PIX code
+      const { data } = await supabase
+        .from('payment_transactions')
+        .select('*')
+        .eq('appointment_id', appointment.id)
+        .maybeSingle();
+
+      if (data) {
+        setTransaction(data);
+        toast.success('Código PIX gerado com sucesso!');
+      }
+    } catch (error) {
+      console.error('Error generating PIX:', error);
+      toast.error('Erro ao gerar código PIX. Tente novamente.');
+    } finally {
+      setGeneratingPix(false);
     }
   };
 
@@ -134,9 +180,12 @@ export const PaymentModal = ({ appointment, open, onClose, pixKey, pixLabel }: P
           </Card>
 
           {/* Informações de Pagamento */}
-          {loading ? (
-            <div className="flex justify-center py-8">
+          {loading || generatingPix ? (
+            <div className="flex flex-col items-center justify-center py-8 gap-3">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">
+                {generatingPix ? 'Gerando código PIX...' : 'Carregando...'}
+              </p>
             </div>
           ) : transaction?.status !== 'paid' ? (
             <div className="space-y-4">
@@ -148,7 +197,7 @@ export const PaymentModal = ({ appointment, open, onClose, pixKey, pixLabel }: P
               </div>
 
               {/* QR Code PIX */}
-              {transaction?.pix_copy_paste && (
+              {transaction?.pix_copy_paste ? (
                 <Card className="p-4 border-primary/20">
                   <div className="flex flex-col items-center gap-3">
                     <div className="text-xs text-muted-foreground">Escaneie o QR Code</div>
@@ -164,6 +213,23 @@ export const PaymentModal = ({ appointment, open, onClose, pixKey, pixLabel }: P
                     <p className="text-xs text-muted-foreground text-center">
                       Aponte a câmera do app do seu banco para o QR Code
                     </p>
+                  </div>
+                </Card>
+              ) : (
+                <Card className="p-4 border-warning/20 bg-warning/5">
+                  <div className="flex flex-col items-center gap-3">
+                    <p className="text-sm text-center text-muted-foreground">
+                      Não foi possível gerar o código PIX automaticamente.
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={generatePix}
+                      disabled={generatingPix}
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Gerar código PIX
+                    </Button>
                   </div>
                 </Card>
               )}
