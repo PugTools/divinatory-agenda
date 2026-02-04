@@ -75,11 +75,131 @@ export const gameTypeSchema = z.object({
     .max(10000, 'Valor deve ser no máximo R$ 10.000')
 });
 
+// PIX key validation helpers
+const CPF_REGEX = /^\d{11}$/;
+const CNPJ_REGEX = /^\d{14}$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^\+55\d{10,11}$/;
+const EVP_REGEX = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+
+// CPF validation with check digits
+function isValidCPF(cpf: string): boolean {
+  if (cpf.length !== 11) return false;
+  
+  // Check for known invalid CPFs
+  if (/^(\d)\1{10}$/.test(cpf)) return false;
+  
+  // Validate check digits
+  let sum = 0;
+  for (let i = 0; i < 9; i++) {
+    sum += parseInt(cpf[i]) * (10 - i);
+  }
+  let remainder = (sum * 10) % 11;
+  if (remainder === 10) remainder = 0;
+  if (remainder !== parseInt(cpf[9])) return false;
+  
+  sum = 0;
+  for (let i = 0; i < 10; i++) {
+    sum += parseInt(cpf[i]) * (11 - i);
+  }
+  remainder = (sum * 10) % 11;
+  if (remainder === 10) remainder = 0;
+  if (remainder !== parseInt(cpf[10])) return false;
+  
+  return true;
+}
+
+// CNPJ validation with check digits
+function isValidCNPJ(cnpj: string): boolean {
+  if (cnpj.length !== 14) return false;
+  
+  // Check for known invalid CNPJs
+  if (/^(\d)\1{13}$/.test(cnpj)) return false;
+  
+  // Validate first check digit
+  const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  let sum = 0;
+  for (let i = 0; i < 12; i++) {
+    sum += parseInt(cnpj[i]) * weights1[i];
+  }
+  let remainder = sum % 11;
+  const digit1 = remainder < 2 ? 0 : 11 - remainder;
+  if (digit1 !== parseInt(cnpj[12])) return false;
+  
+  // Validate second check digit
+  const weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+  sum = 0;
+  for (let i = 0; i < 13; i++) {
+    sum += parseInt(cnpj[i]) * weights2[i];
+  }
+  remainder = sum % 11;
+  const digit2 = remainder < 2 ? 0 : 11 - remainder;
+  if (digit2 !== parseInt(cnpj[13])) return false;
+  
+  return true;
+}
+
+export type PixKeyType = 'cpf' | 'cnpj' | 'email' | 'phone' | 'evp' | 'invalid';
+
+export function detectPixKeyType(key: string): PixKeyType {
+  const cleanKey = key.trim();
+  
+  // Remove formatting from CPF/CNPJ for validation
+  const digitsOnly = cleanKey.replace(/\D/g, '');
+  
+  // Check CPF (11 digits)
+  if (CPF_REGEX.test(digitsOnly) && isValidCPF(digitsOnly)) {
+    return 'cpf';
+  }
+  
+  // Check CNPJ (14 digits)
+  if (CNPJ_REGEX.test(digitsOnly) && isValidCNPJ(digitsOnly)) {
+    return 'cnpj';
+  }
+  
+  // Check Email
+  if (EMAIL_REGEX.test(cleanKey)) {
+    return 'email';
+  }
+  
+  // Check Phone (+55XXXXXXXXXXX)
+  const phoneDigits = cleanKey.replace(/[\s()-]/g, '');
+  if (PHONE_REGEX.test(phoneDigits) || /^\+55\d{10,11}$/.test(phoneDigits)) {
+    return 'phone';
+  }
+  
+  // Check EVP (random key - UUID format)
+  if (EVP_REGEX.test(cleanKey)) {
+    return 'evp';
+  }
+  
+  return 'invalid';
+}
+
+export function formatPixKeyForDisplay(type: PixKeyType): string {
+  switch (type) {
+    case 'cpf': return 'CPF';
+    case 'cnpj': return 'CNPJ';
+    case 'email': return 'E-mail';
+    case 'phone': return 'Telefone';
+    case 'evp': return 'Chave Aleatória';
+    default: return 'Inválido';
+  }
+}
+
+// PIX key validation schema
+export const pixKeySchema = z.string()
+  .trim()
+  .min(1, 'Chave PIX é obrigatória')
+  .max(255, 'Chave PIX deve ter no máximo 255 caracteres')
+  .refine((val) => {
+    if (!val) return true; // Empty is handled by min()
+    return detectPixKeyType(val) !== 'invalid';
+  }, 'Chave PIX inválida. Use CPF, CNPJ, e-mail, telefone (+55) ou chave aleatória (UUID)');
+
 // Config validation
 export const configSchema = z.object({
-  pix_key: z.string()
-    .trim()
-    .max(255, 'Chave PIX deve ter no máximo 255 caracteres'),
+  pix_key: pixKeySchema.optional().or(z.literal('')),
   
   pix_label: z.string()
     .trim()
