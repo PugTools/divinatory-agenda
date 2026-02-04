@@ -199,27 +199,32 @@ export const PaymentModal = ({ appointment, open, onClose, pixKey, pixLabel }: P
               {/* QR Code PIX */}
               {transaction?.pix_copy_paste ? (
                 <Card className="p-4 border-primary/20">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="text-xs text-muted-foreground">Escaneie o QR Code</div>
-                    <div className="bg-white p-3 rounded-lg">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="text-sm font-medium text-foreground">Escaneie o QR Code PIX</div>
+                    <div className="bg-white p-4 rounded-xl shadow-md">
                       <QRCode
                         value={transaction.pix_copy_paste}
-                        size={180}
-                        level="M"
+                        size={200}
+                        level="H"
                         bgColor="#FFFFFF"
                         fgColor="#000000"
                       />
                     </div>
-                    <p className="text-xs text-muted-foreground text-center">
-                      Aponte a câmera do app do seu banco para o QR Code
-                    </p>
+                    <div className="text-center space-y-1">
+                      <p className="text-xs text-muted-foreground">
+                        Abra o app do seu banco e escaneie o código acima
+                      </p>
+                      <p className="text-xs text-primary font-medium">
+                        ou copie o código abaixo
+                      </p>
+                    </div>
                   </div>
                 </Card>
               ) : (
                 <Card className="p-4 border-warning/20 bg-warning/5">
                   <div className="flex flex-col items-center gap-3">
                     <p className="text-sm text-center text-muted-foreground">
-                      Não foi possível gerar o código PIX automaticamente.
+                      Clique para gerar o código PIX
                     </p>
                     <Button 
                       variant="outline" 
@@ -227,7 +232,11 @@ export const PaymentModal = ({ appointment, open, onClose, pixKey, pixLabel }: P
                       onClick={generatePix}
                       disabled={generatingPix}
                     >
-                      <RefreshCw className="h-4 w-4 mr-2" />
+                      {generatingPix ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                      )}
                       Gerar código PIX
                     </Button>
                   </div>
