@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Config } from '@/types/divination';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { useFinancialData } from '@/hooks/useFinancialData';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/ui/pagination-controls';
 import { SearchFilter } from '@/components/ui/search-filter';
+import { detectPixKeyType, formatPixKeyForDisplay, pixKeySchema } from '@/schemas/validation';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -18,7 +19,9 @@ import {
   XCircle,
   Calendar,
   User,
-  Phone
+  Phone,
+  AlertCircle,
+  CreditCard
 } from 'lucide-react';
 import {
   Table,
@@ -51,6 +54,27 @@ const STATUS_OPTIONS = [
 
 export const FinanceiroTab = ({ config, onUpdateConfig }: FinanceiroTabProps) => {
   const { stats, loading, updateTransactionStatus, allTransactions } = useFinancialData();
+  const [pixKeyError, setPixKeyError] = useState<string | null>(null);
+  const [pixKeyType, setPixKeyType] = useState<string | null>(null);
+
+  // Validate PIX key on change
+  useEffect(() => {
+    if (!config.pix) {
+      setPixKeyError(null);
+      setPixKeyType(null);
+      return;
+    }
+    
+    const result = pixKeySchema.safeParse(config.pix);
+    if (!result.success) {
+      setPixKeyError(result.error.errors[0].message);
+      setPixKeyType(null);
+    } else {
+      setPixKeyError(null);
+      const type = detectPixKeyType(config.pix);
+      setPixKeyType(formatPixKeyForDisplay(type));
+    }
+  }, [config.pix]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -90,17 +114,43 @@ export const FinanceiroTab = ({ config, onUpdateConfig }: FinanceiroTabProps) =>
     <div className="space-y-6">
       {/* PIX Configuration */}
       <Card className="p-6 space-y-4">
-        <h3 className="text-xl font-semibold">Configurações de Pagamento PIX</h3>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <CreditCard className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold">Configurações de Pagamento PIX</h3>
+            <p className="text-sm text-muted-foreground">Configure sua chave PIX para receber pagamentos</p>
+          </div>
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="pix-key">Chave PIX</Label>
+            <Label htmlFor="pix-key" className="flex items-center gap-2">
+              Chave PIX
+              {pixKeyType && (
+                <Badge variant="secondary" className="text-xs">
+                  {pixKeyType}
+                </Badge>
+              )}
+            </Label>
             <Input
               id="pix-key"
               value={config.pix}
               onChange={(e) => onUpdateConfig({ ...config, pix: e.target.value })}
-              placeholder="Digite sua chave PIX"
+              placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
+              className={pixKeyError ? 'border-destructive' : pixKeyType ? 'border-success' : ''}
             />
+            {pixKeyError ? (
+              <p className="text-xs text-destructive flex items-center gap-1">
+                <AlertCircle className="h-3 w-3" />
+                {pixKeyError}
+              </p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Formatos aceitos: CPF (11 dígitos), CNPJ (14 dígitos), e-mail, telefone (+55...) ou chave aleatória (UUID)
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -110,9 +160,24 @@ export const FinanceiroTab = ({ config, onUpdateConfig }: FinanceiroTabProps) =>
               value={config.pixLabel}
               onChange={(e) => onUpdateConfig({ ...config, pixLabel: e.target.value })}
               placeholder="Nome para identificação"
+              maxLength={100}
             />
+            <p className="text-xs text-muted-foreground">
+              Nome que aparecerá para o cliente no momento do pagamento
+            </p>
           </div>
         </div>
+
+        {config.pix && !pixKeyError && (
+          <div className="bg-success/10 border border-success/20 rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-success" />
+              <span className="text-sm text-success font-medium">
+                Chave PIX válida ({pixKeyType})
+              </span>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Financial Stats */}
