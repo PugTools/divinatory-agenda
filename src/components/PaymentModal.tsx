@@ -202,13 +202,23 @@ export const PaymentModal = ({ appointment, open, onClose, pixKey, pixLabel }: P
                   <div className="flex flex-col items-center gap-4">
                     <div className="text-sm font-medium text-foreground">Escaneie o QR Code PIX</div>
                     <div className="bg-white p-4 rounded-xl shadow-md">
-                      <QRCode
-                        value={transaction.pix_copy_paste}
-                        size={200}
-                        level="H"
-                        bgColor="#FFFFFF"
-                        fgColor="#000000"
-                      />
+                      {transaction.pix_qr_code ? (
+                        // Use Mercado Pago's base64 QR code if available
+                        <img 
+                          src={transaction.pix_qr_code} 
+                          alt="QR Code PIX" 
+                          className="w-[200px] h-[200px]"
+                        />
+                      ) : (
+                        // Fallback to generated QR code
+                        <QRCode
+                          value={transaction.pix_copy_paste}
+                          size={200}
+                          level="H"
+                          bgColor="#FFFFFF"
+                          fgColor="#000000"
+                        />
+                      )}
                     </div>
                     <div className="text-center space-y-1">
                       <p className="text-xs text-muted-foreground">
